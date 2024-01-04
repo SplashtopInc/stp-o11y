@@ -1,9 +1,9 @@
-##  https://splashtopinc.github.io/stp-o11y/
+##  https://SplashtopInc.github.io/stp-o11y/
 chart github pages
 
 ## Use this chart
 ```bash
-helm repo add stp-o11y https://splashtopinc.github.io/stp-o11y/
+helm repo add stp-o11y https://SplashtopInc.github.io/stp-o11y/
 
 helm search repo stp-o11y -l
 ```
@@ -31,12 +31,16 @@ git switch gh-pages
 
 git pull origin gh-pages
 
+rm -rf charts
+
+helm repo index --url https://SplashtopInc.github.io/stp-o11y .
+
 git add .
 
 ## 🚨 🚨 🚨 only need commit `index.yaml` and `stp-o11y-x.x.x.tgz` 🚨 🚨 🚨
 git status
 
-git ci -a -m "release version"
+git commit -a -m "release version"
 
 git push origin gh-pages
 ```
