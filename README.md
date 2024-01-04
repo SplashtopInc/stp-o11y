@@ -3,7 +3,9 @@ chart github pages
 
 ## Use this chart
 ```bash
-helm repo add helm-demo https://splashtopinc.github.io/stp-o11y/
+helm repo add stp-o11y https://splashtopinc.github.io/stp-o11y/
+
+helm search repo stp-o11y -l
 ```
 
 ## Local build chart 
