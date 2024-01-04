@@ -1,5 +1,5 @@
 # stp-o11y
-[![Release Helm Charts](https://github.com/SplashtopInc/stp-o11y/actions/workflows/release.yml/badge.svg?branch=master)](https://github.com/SplashtopInc/stp-o11y/actions/workflows/release.yml)
+[![Release Helm Charts](https://github.com/SplashtopInc/stp-o11y/actions/workflows/release.yml/badge.svg)](https://github.com/SplashtopInc/stp-o11y/actions/workflows/release.yml)
 [![pages-build-deployment](https://github.com/SplashtopInc/stp-o11y/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages)](https://github.com/SplashtopInc/stp-o11y/actions/workflows/pages/pages-build-deployment)
 
 ## Use this chart
