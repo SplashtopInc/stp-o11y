@@ -1,0 +1,19 @@
+apiVersion: v1
+entries:
+  stp-o11y:
+  - apiVersion: v2
+    appVersion: 0.0.0
+    created: "2024-01-04T07:33:08.58661024Z"
+    dependencies:
+    - condition: kubernetes-event-exporter.enabled
+      name: kubernetes-event-exporter
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.10.0
+    description: A Helm chart for Kubernetes
+    digest: 8a24e5394b9969adae45215f018571749fad271e58f0fb2eb7440edb461f41c5
+    name: stp-o11y
+    type: application
+    urls:
+    - https://SplashtopInc.github.io/stp-o11y/stp-o11y-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-01-04T07:33:08.583909711Z"
