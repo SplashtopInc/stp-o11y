@@ -1,0 +1,43 @@
+kubernetes-event-exporter:
+  enabled: true
+  config:
+    logLevel: debug
+    metricsNamePrefix: "event_exporter_"
+    logFormat: json
+    receivers:
+      # - name: dump
+      #   file:
+      #   layout: {}
+      #   path: /dev/stdout
+      - name: loki
+        loki:
+          streamLabels:
+            app: kubernetes-event-exporter
+            dataCenter: local-cluster
+          url: http://loki:3100/loki/api/v1/push
+          # layout:
+          #   message: "{{ .Message }}"
+          #   reason: "{{ .Reason }}"
+          #   type: "{{ .Type }}"
+          #   count: "{{ .Count }}"
+          #   kind: "{{ .InvolvedObject.Kind }}"
+          #   name: "{{ .InvolvedObject.Name }}"
+          #   namespace: "{{ .Namespace }}"
+          #   component: "{{ .Source.Component }}"
+          #   host: "{{ .Source.Host }}"
+      # - name: webhook
+      # use lambda function Url
+      # allow NONE auth type
+      # webhook:
+      # lambda python example see lambda/
+      # headers:
+      #   data-center: local-cluster
+      # endpoint: https://xxxxxxxxxxxxx.lambda-url.region.on.aws/
+    route:
+      routes:
+        # - match:
+        #   - receiver: dump
+        - match:
+            - receiver: loki
+      # - match:
+      # - receiver: webhook
