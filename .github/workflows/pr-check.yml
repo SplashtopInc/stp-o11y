@@ -5,8 +5,10 @@ on:
     paths:
       - '*'
       - '!.github/workflows/**'
-      
-
+      - '!scripts/**'
+      - '!.gitignore'
+      - '!.helmignore'
+      - '!README.md'
 jobs:
   check:
     runs-on: ubuntu-latest
