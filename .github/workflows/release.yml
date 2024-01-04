@@ -1,0 +1,86 @@
+name: Release Helm Charts
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  release_helm_chart:
+    name: Releases Helm Chart
+    runs-on: ubuntu-latest
+    # depending on default permission settings for your org (contents being read-only or read-write for workloads), you will have to add permissions
+    # see: https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: install helm cli
+        id: install
+        uses: azure/setup-helm@v3.5
+        with:
+          version: ${{ vars.HELM_CLI_VERSION }} # default is latest (stable) v3.13.1
+          #token: ${{ secrets.GITHUB_TOKEN }} # only needed if version is 'latest'
+
+      - name: Add dependency helm chart repo
+        run: |
+          helm version
+          npx zx scripts/get-helm-depends-update.mjs
+
+      - name: Release helm chart to Github Pages
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          # Default environment variables 
+          # https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
+          # https://docs.github.com/en/actions/learn-github-actions/contexts#github-context
+        run: |
+          export TAG=${GITHUB_REF#refs/*/}
+          export VERSION=$(echo $TAG | cut -d 'v' -f 2)
+          export CHECK_CHART_VERSION=$(cat Chart.yaml | grep '^version: ' | cut -d ' ' -f 2)
+          echo "TAG=$TAG"
+          echo "VERSION=$VERSION"
+          echo "CHECK_CHART_VERSION=$CHECK_CHART_VERSION"
+          [[ $VERSION != $CHECK_CHART_VERSION ]] && exit 1 || echo "check ok"
+          helm dependency update --skip-refresh
+          helm package .
+          echo "checkout to gh-pages branch..."
+          git checkout gh-pages
+          echo "Clean up this branch temp file..."
+          rm -rf charts/
+          export REPOSITORY=$(echo ${GITHUB_REPOSITORY} | cut -d "/" -f 2)
+          echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}"
+          echo "GITHUB_REPOSITORY_OWNER=${GITHUB_REPOSITORY_OWNER}"
+          echo "REPOSITORY=${REPOSITORY}"
+          helm repo index --url https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPOSITORY} .
+          git add .
+          git commit -m "gh page release ${VERSION}"
+          git push origin gh-pages
+  release_github:
+    name: Publish to GitHub Releases
+    needs: release_helm_chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          export VERSION=$(cat Chart.yaml | grep '^version: ' | cut -d ' ' -f 2)
+          gh release create v${VERSION} --generate-notes --repo ${GITHUB_REPOSITORY}
