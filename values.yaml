@@ -41,12 +41,12 @@ kubernetes-event-exporter:
       # headers:
       #   data-center: local-cluster
       # endpoint: https://xxxxxxxxxxxxx.lambda-url.region.on.aws/
-    route:
-      routes:
+    # route:
+      # routes:
         # - match:
         #   - receiver: dump
-        - match:
-            - receiver: loki
+        # - match:
+        #     - receiver: loki
       # - match:
       # - receiver: webhook
 
@@ -95,55 +95,8 @@ victoria-metrics-agent:
       scrape_interval: 30s
       external_labels:
         datacenter: *eksClusterName
-  extraScrapeConfigs:
-  - job_name: "devops-custom-svc-ds"
-    scrape_interval: 5s
-    kubernetes_sd_configs:
-      - role: endpointslices
-    relabel_configs:
-      - action: drop
-        source_labels: [__meta_kubernetes_pod_container_init]
-        regex: true
-      - action: keep_if_equal
-        source_labels: [__meta_kubernetes_service_annotation_devops_custom_svc_ds_port, __meta_kubernetes_pod_container_port_number]
-      - source_labels:
-          [__meta_kubernetes_service_annotation_devops_custom_svc_ds_scrape]
-        action: keep
-        regex: true
-      - source_labels:
-          [__meta_kubernetes_service_annotation_devops_custom_svc_ds_scheme]
-        action: replace
-        target_label: __scheme__
-        regex: (https?)
-      - source_labels:
-          [__meta_kubernetes_service_annotation_devops_custom_svc_ds_path]
-        action: replace
-        target_label: __metrics_path__
-        regex: (.+)
-      - source_labels:
-          [
-            __address__,
-            __meta_kubernetes_service_annotation_devops_custom_svc_ds_port,
-          ]
-        action: replace
-        target_label: __address__
-        regex: ([^:]+)(?::\d+)?;(\d+)
-        replacement: $1:$2
-      - action: labelmap
-        regex: __meta_kubernetes_service_label_(.+)
-      - source_labels: [__meta_kubernetes_pod_name]
-        target_label: pod
-      - source_labels: [__meta_kubernetes_pod_container_name]
-        target_label: container
-      - source_labels: [__meta_kubernetes_namespace]
-        target_label: namespace
-      - source_labels: [__meta_kubernetes_service_name]
-        target_label: service
-      - source_labels: [__meta_kubernetes_service_name]
-        target_label: job
-        replacement: ${1}
-      - source_labels: [__meta_kubernetes_pod_node_name]
-        action: replace
-        target_label: node
   remoteWriteUrls:
-    - https://xxx.vminsert.com/api/v1/write
+    # send data to victoria-metrics-cluster-vminsert in the same cluster.
+    - http://victoria-metrics-cluster-vminsert.default:8480/insert/0/prometheus
+    # send data to remoteWrite 
+    # - http://remote-write-url:8428/api/v1/write
