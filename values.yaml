@@ -1,5 +1,13 @@
+appNodeSelector: &appNodeSelector devops
+eksClusterName: &eksClusterName local-cluster
+enabledvmproxy: &enabledvmproxy false
+vmProxyEndpoint: &vmProxyEndpoint ""
+
 kubernetes-event-exporter:
   enabled: true
+  fullnameOverride: "kubernetes-event-exporter"
+  networkPolicy:
+    enabled: false
   config:
     logLevel: debug
     metricsNamePrefix: "event_exporter_"
@@ -41,3 +49,101 @@ kubernetes-event-exporter:
             - receiver: loki
       # - match:
       # - receiver: webhook
+
+kube-state-metrics:
+  enabled: true
+  fullnameOverride: "kube-state-metrics"
+  networkPolicy:
+    enabled: false
+  nodeSelector:
+    app: *appNodeSelector
+
+prometheus-node-exporter:
+  enabled: true
+  fullnameOverride: "node-exporter"
+  networkPolicy:
+    enabled: false
+  service:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9100"
+      prometheus.io/path: "/metrics"
+
+vmproxy:
+  enabled: *enabledvmproxy
+  datacenter: *eksClusterName
+  endpoint: *vmProxyEndpoint
+  nodeSelector:
+    app: *appNodeSelector
+
+victoria-metrics-agent:
+  fullnameOverride: "victoria-metrics-agent"
+  enabled: true
+  replicaCount: 1
+  deployment:
+    enabled: false
+  statefulset:
+    enabled: true
+    clusterMode: true
+    replicationFactor: 1
+    updateStrategy:
+      type: RollingUpdate
+  nodeSelector:
+    app: *appNodeSelector
+  config:
+    global:
+      scrape_interval: 30s
+      external_labels:
+        datacenter: *eksClusterName
+  extraScrapeConfigs:
+  - job_name: "devops-custom-svc-ds"
+    scrape_interval: 5s
+    kubernetes_sd_configs:
+      - role: endpointslices
+    relabel_configs:
+      - action: drop
+        source_labels: [__meta_kubernetes_pod_container_init]
+        regex: true
+      - action: keep_if_equal
+        source_labels: [__meta_kubernetes_service_annotation_devops_custom_svc_ds_port, __meta_kubernetes_pod_container_port_number]
+      - source_labels:
+          [__meta_kubernetes_service_annotation_devops_custom_svc_ds_scrape]
+        action: keep
+        regex: true
+      - source_labels:
+          [__meta_kubernetes_service_annotation_devops_custom_svc_ds_scheme]
+        action: replace
+        target_label: __scheme__
+        regex: (https?)
+      - source_labels:
+          [__meta_kubernetes_service_annotation_devops_custom_svc_ds_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels:
+          [
+            __address__,
+            __meta_kubernetes_service_annotation_devops_custom_svc_ds_port,
+          ]
+        action: replace
+        target_label: __address__
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_container_name]
+        target_label: container
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: service
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: job
+        replacement: ${1}
+      - source_labels: [__meta_kubernetes_pod_node_name]
+        action: replace
+        target_label: node
+  remoteWriteUrls:
+    - https://xxx.vminsert.com/api/v1/write

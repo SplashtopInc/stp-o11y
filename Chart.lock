@@ -1,6 +1,15 @@
 dependencies:
 - name: kubernetes-event-exporter
   repository: https://charts.bitnami.com/bitnami
-  version: 2.10.1
-digest: sha256:dd4cb6670368f60f939db0a0a24906bc572e267cd100b5a5463a0b260628f74e
-generated: "2024-01-08T11:36:10.045729+08:00"
+  version: 2.15.2
+- name: prometheus-node-exporter
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 4.30.2
+- name: victoria-metrics-agent
+  repository: https://victoriametrics.github.io/helm-charts/
+  version: 0.9.11
+- name: kube-state-metrics
+  repository: https://charts.bitnami.com/bitnami
+  version: 3.14.2
+digest: sha256:0bf3677019dac97137b58aed497d2a072dd0141974089420a3a3aee8856d75a7
+generated: "2024-02-27T09:54:07.336939+08:00"
