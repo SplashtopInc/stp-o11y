@@ -33,7 +33,7 @@ git pull origin gh-pages
 
 rm -rf charts
 
-helm repo index --url https://SplashtopInc.github.io/stp-o11y .
+helm repo index --url "" .
 
 git add .
 
