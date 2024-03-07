@@ -3,7 +3,34 @@ entries:
   stp-o11y:
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-01-08T03:42:11.59762774Z"
+    created: "2024-03-07T17:41:46.729211+08:00"
+    dependencies:
+    - condition: kubernetes-event-exporter.enabled
+      name: kubernetes-event-exporter
+      repository: '@bitnami'
+      version: 2.15.2
+    - condition: prometheus-node-exporter.enabled
+      name: prometheus-node-exporter
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 4.30.2
+    - condition: victoria-metrics-agent.enabled
+      name: victoria-metrics-agent
+      repository: https://victoriametrics.github.io/helm-charts/
+      version: 0.9.11
+    - condition: kube-state-metrics.enabled
+      name: kube-state-metrics
+      repository: '@bitnami'
+      version: 3.14.2
+    description: A Helm chart for stp-o11y tools
+    digest: efe9d2b8a296ac3439e029b55f2c53f91a7c711addd4592abaa8b8f3d485a8e8
+    name: stp-o11y
+    type: application
+    urls:
+    - stp-o11y-1.0.0-beta-1.tgz
+    version: 1.0.0-beta-1
+  - apiVersion: v2
+    appVersion: 0.0.0
+    created: "2024-03-07T17:41:46.723156+08:00"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -14,11 +41,11 @@ entries:
     name: stp-o11y
     type: application
     urls:
-    - https://SplashtopInc.github.io/stp-o11y/stp-o11y-0.1.2.tgz
+    - stp-o11y-0.1.2.tgz
     version: 0.1.2
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-01-08T03:42:11.595605301Z"
+    created: "2024-03-07T17:41:46.720826+08:00"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -29,11 +56,11 @@ entries:
     name: stp-o11y
     type: application
     urls:
-    - https://SplashtopInc.github.io/stp-o11y/stp-o11y-0.1.1.tgz
+    - stp-o11y-0.1.1.tgz
     version: 0.1.1
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-01-08T03:42:11.593489862Z"
+    created: "2024-03-07T17:41:46.71911+08:00"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -44,6 +71,6 @@ entries:
     name: stp-o11y
     type: application
     urls:
-    - https://SplashtopInc.github.io/stp-o11y/stp-o11y-0.1.0.tgz
+    - stp-o11y-0.1.0.tgz
     version: 0.1.0
-generated: "2024-01-08T03:42:11.590874754Z"
+generated: "2024-03-07T17:41:46.71722+08:00"
