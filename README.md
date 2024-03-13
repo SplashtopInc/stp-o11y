@@ -42,7 +42,8 @@ git pull origin gh-pages
 
 rm -rf charts
 
-helm repo index --url https://SplashtopInc.github.io/stp-o11y .
+# --url "" is for `index.yaml` do not need complete repo url.
+helm repo index --url "" .
 
 git add .
 
