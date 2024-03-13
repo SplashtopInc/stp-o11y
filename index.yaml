@@ -3,7 +3,7 @@ entries:
   stp-o11y:
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-03-13T08:57:32.776006Z"
+    created: "2024-03-13T17:05:08.359307+08:00"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -30,142 +30,7 @@ entries:
     version: 1.0.0
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-03-13T08:57:32.769546676Z"
-    dependencies:
-    - condition: kubernetes-event-exporter.enabled
-      name: kubernetes-event-exporter
-      repository: '@bitnami'
-      version: 2.15.2
-    - condition: prometheus-node-exporter.enabled
-      name: prometheus-node-exporter
-      repository: https://prometheus-community.github.io/helm-charts
-      version: 4.30.2
-    - condition: victoria-metrics-agent.enabled
-      name: victoria-metrics-agent
-      repository: https://victoriametrics.github.io/helm-charts/
-      version: 0.9.11
-    - condition: kube-state-metrics.enabled
-      name: kube-state-metrics
-      repository: '@bitnami'
-      version: 3.14.2
-    description: A Helm chart for stp-o11y tools
-    digest: 92cce0a7524fd8d1c062916f6f1d2b13ae57368ad4490a4d49fcfe8bbdc84f8b
-    name: stp-o11y
-    type: application
-    urls:
-    - stp-o11y-1.0.0-beta-5.tgz
-    version: 1.0.0-beta-5
-  - apiVersion: v2
-    appVersion: 0.0.0
-    created: "2024-03-13T08:57:32.762345034Z"
-    dependencies:
-    - condition: kubernetes-event-exporter.enabled
-      name: kubernetes-event-exporter
-      repository: '@bitnami'
-      version: 2.15.2
-    - condition: prometheus-node-exporter.enabled
-      name: prometheus-node-exporter
-      repository: https://prometheus-community.github.io/helm-charts
-      version: 4.30.2
-    - condition: victoria-metrics-agent.enabled
-      name: victoria-metrics-agent
-      repository: https://victoriametrics.github.io/helm-charts/
-      version: 0.9.11
-    - condition: kube-state-metrics.enabled
-      name: kube-state-metrics
-      repository: '@bitnami'
-      version: 3.14.2
-    description: A Helm chart for stp-o11y tools
-    digest: 4a1840b07c75eaaef04cd002fbb9e62d32f54510b9048c18f8f9c430b371df46
-    name: stp-o11y
-    type: application
-    urls:
-    - stp-o11y-1.0.0-beta-4.tgz
-    version: 1.0.0-beta-4
-  - apiVersion: v2
-    appVersion: 0.0.0
-    created: "2024-03-13T08:57:32.754889711Z"
-    dependencies:
-    - condition: kubernetes-event-exporter.enabled
-      name: kubernetes-event-exporter
-      repository: '@bitnami'
-      version: 2.15.2
-    - condition: prometheus-node-exporter.enabled
-      name: prometheus-node-exporter
-      repository: https://prometheus-community.github.io/helm-charts
-      version: 4.30.2
-    - condition: victoria-metrics-agent.enabled
-      name: victoria-metrics-agent
-      repository: https://victoriametrics.github.io/helm-charts/
-      version: 0.9.11
-    - condition: kube-state-metrics.enabled
-      name: kube-state-metrics
-      repository: '@bitnami'
-      version: 3.14.2
-    description: A Helm chart for stp-o11y tools
-    digest: bfcde694afb0a626476eebc4ed3715988cc6314c5250ecee3dd009bc184b43d1
-    name: stp-o11y
-    type: application
-    urls:
-    - stp-o11y-1.0.0-beta-3.tgz
-    version: 1.0.0-beta-3
-  - apiVersion: v2
-    appVersion: 0.0.0
-    created: "2024-03-13T08:57:32.748069092Z"
-    dependencies:
-    - condition: kubernetes-event-exporter.enabled
-      name: kubernetes-event-exporter
-      repository: '@bitnami'
-      version: 2.15.2
-    - condition: prometheus-node-exporter.enabled
-      name: prometheus-node-exporter
-      repository: https://prometheus-community.github.io/helm-charts
-      version: 4.30.2
-    - condition: victoria-metrics-agent.enabled
-      name: victoria-metrics-agent
-      repository: https://victoriametrics.github.io/helm-charts/
-      version: 0.9.11
-    - condition: kube-state-metrics.enabled
-      name: kube-state-metrics
-      repository: '@bitnami'
-      version: 3.14.2
-    description: A Helm chart for stp-o11y tools
-    digest: 8b2bd58d11205495e2a29fd77b2d836cb08cba6425a8789db31e34818ec1bda4
-    name: stp-o11y
-    type: application
-    urls:
-    - stp-o11y-1.0.0-beta-2.tgz
-    version: 1.0.0-beta-2
-  - apiVersion: v2
-    appVersion: 0.0.0
-    created: "2024-03-13T08:57:32.740768366Z"
-    dependencies:
-    - condition: kubernetes-event-exporter.enabled
-      name: kubernetes-event-exporter
-      repository: '@bitnami'
-      version: 2.15.2
-    - condition: prometheus-node-exporter.enabled
-      name: prometheus-node-exporter
-      repository: https://prometheus-community.github.io/helm-charts
-      version: 4.30.2
-    - condition: victoria-metrics-agent.enabled
-      name: victoria-metrics-agent
-      repository: https://victoriametrics.github.io/helm-charts/
-      version: 0.9.11
-    - condition: kube-state-metrics.enabled
-      name: kube-state-metrics
-      repository: '@bitnami'
-      version: 3.14.2
-    description: A Helm chart for stp-o11y tools
-    digest: efe9d2b8a296ac3439e029b55f2c53f91a7c711addd4592abaa8b8f3d485a8e8
-    name: stp-o11y
-    type: application
-    urls:
-    - stp-o11y-1.0.0-beta-1.tgz
-    version: 1.0.0-beta-1
-  - apiVersion: v2
-    appVersion: 0.0.0
-    created: "2024-03-13T08:57:32.733457476Z"
+    created: "2024-03-13T17:05:08.352585+08:00"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -180,7 +45,7 @@ entries:
     version: 0.1.2
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-03-13T08:57:32.731634909Z"
+    created: "2024-03-13T17:05:08.350413+08:00"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -195,7 +60,7 @@ entries:
     version: 0.1.1
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-03-13T08:57:32.72980047Z"
+    created: "2024-03-13T17:05:08.346679+08:00"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -208,4 +73,4 @@ entries:
     urls:
     - stp-o11y-0.1.0.tgz
     version: 0.1.0
-generated: "2024-03-13T08:57:32.727086029Z"
+generated: "2024-03-13T17:05:08.343892+08:00"
