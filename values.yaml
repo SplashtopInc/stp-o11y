@@ -1,5 +1,19 @@
+appNodeSelector: &appNodeSelector devops
+eksClusterName: &eksClusterName local-cluster
+enabledvmproxy: &enabledvmproxy false
+vmProxyEndpoint: &vmProxyEndpoint ""
+env:
+  vault_addr: ""
+  vault_sns_arn: ""
+  vault_sns_subject: ""
+  vault_sns_message: ""
+  vault_check_period: "*/1 * * * *"
+
 kubernetes-event-exporter:
   enabled: true
+  fullnameOverride: "kubernetes-event-exporter"
+  networkPolicy:
+    enabled: false
   config:
     logLevel: debug
     metricsNamePrefix: "event_exporter_"
@@ -33,11 +47,62 @@ kubernetes-event-exporter:
       # headers:
       #   data-center: local-cluster
       # endpoint: https://xxxxxxxxxxxxx.lambda-url.region.on.aws/
-    route:
-      routes:
+    # route:
+      # routes:
         # - match:
         #   - receiver: dump
-        - match:
-            - receiver: loki
+        # - match:
+        #     - receiver: loki
       # - match:
       # - receiver: webhook
+
+kube-state-metrics:
+  enabled: true
+  fullnameOverride: "kube-state-metrics"
+  networkPolicy:
+    enabled: false
+  nodeSelector:
+    app: *appNodeSelector
+
+prometheus-node-exporter:
+  enabled: true
+  fullnameOverride: "node-exporter"
+  networkPolicy:
+    enabled: false
+  service:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9100"
+      prometheus.io/path: "/metrics"
+
+vmproxy:
+  enabled: *enabledvmproxy
+  datacenter: *eksClusterName
+  endpoint: *vmProxyEndpoint
+  nodeSelector:
+    app: *appNodeSelector
+
+victoria-metrics-agent:
+  fullnameOverride: "victoria-metrics-agent"
+  enabled: true
+  replicaCount: 1
+  deployment:
+    enabled: false
+  statefulset:
+    enabled: true
+    clusterMode: true
+    replicationFactor: 1
+    updateStrategy:
+      type: RollingUpdate
+  nodeSelector:
+    app: *appNodeSelector
+  config:
+    global:
+      scrape_interval: 30s
+      external_labels:
+        datacenter: *eksClusterName
+  remoteWriteUrls:
+    # send data to victoria-metrics-cluster-vminsert in the same cluster.
+    - http://victoria-metrics-cluster-vminsert.default:8480/insert/0/prometheus
+    # send data to remoteWrite 
+    # - http://remote-write-url:8428/api/v1/write

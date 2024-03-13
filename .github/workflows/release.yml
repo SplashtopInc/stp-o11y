@@ -59,7 +59,7 @@ jobs:
           echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}"
           echo "GITHUB_REPOSITORY_OWNER=${GITHUB_REPOSITORY_OWNER}"
           echo "REPOSITORY=${REPOSITORY}"
-          helm repo index --url https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPOSITORY} .
+          helm repo index --url "" .
           git add .
           git commit -m "gh page release ${VERSION}"
           git push origin gh-pages

@@ -1,0 +1,57 @@
+{{- if .Values.vmproxy.enabled -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vmagent-k8s
+  namespace: monitor
+  labels:
+    app: vmagent-k8s
+spec:
+  serviceName: "vmagent-k8s"
+  replicas: {{ .Values.replicas.vmagent }}
+  selector:
+    matchLabels:
+      app: vmagent-k8s
+  template:
+    metadata:
+      labels:
+        app: vmagent-k8s
+    spec:
+      serviceAccountName: vmagent-k8s
+      containers:
+      - name: vmagent-k8s
+        image: victoriametrics/vmagent:v1.62.0
+#        resources:
+#          limits:
+#            cpu:  200m
+#            memory: 200Mi
+#          requests:
+#            cpu: 200m
+#            memory: 200Mi
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        args:
+          - -promscrape.config=/etc/prometheus/prometheus.yaml
+          - -remoteWrite.url={{ .Values.vmproxy.endpoint }}
+        ports:
+          - name: http
+            containerPort: 8429
+        volumeMounts:
+          - name: config
+            mountPath: /etc/prometheus/
+          - mountPath: "/vmtmp"
+            name: tmp
+      volumes:
+        - name: "tmp"
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: vmagent-k8s
+      nodeSelector:
+        app: devops
+  updateStrategy:
+    type: RollingUpdate
+{{- end }}

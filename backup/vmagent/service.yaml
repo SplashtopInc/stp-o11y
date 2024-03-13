@@ -1,0 +1,18 @@
+{{- if .Values.vmproxy.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vmagent-k8s
+  name: vmagent-k8s
+  namespace: monitor
+spec:
+  ports:
+    - port: 8429
+      protocol: TCP
+      targetPort: http
+      name: http
+  selector:
+    app: vmagent-k8s
+  type: NodePort
+{{- end }}
