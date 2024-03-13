@@ -53,10 +53,10 @@ spec:
           tail -f /crontab.log
         resources:
           requests:
-            cpu: 100m
+            cpu: 200m
             memory: 128Mi
           limits:
-            cpu: 100m
+            cpu: 200m
             memory: 128Mi
         securityContext: 
           privileged: true
