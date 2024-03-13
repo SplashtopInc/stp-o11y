@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-health-check
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-health-check
+  template:
+    metadata:
+      labels:
+        app: vault-health-check
+    spec:
+      containers:
+      - name: vault-health-check
+        image: public.ecr.aws/aws-cli/aws-cli:latest
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/bash
+        - -c
+        - | 
+          touch crontab.log && \
+          echo 'VAULT_STATUS=$(curl -sk -o /dev/null --head -w "%{http_code}" {{ .Values.env.vault_addr }}/v1/sys/health) && if [[ "${VAULT_STATUS}" -ne "200" ]]; then if [[ -n {{ .Values.env.vault_sns_arn | quote }} ]]; then aws sns publish --topic-arn {{ .Values.env.vault_sns_arn | quote }} --subject {{ .Values.env.vault_sns_subject | quote }} --message-structure "string" --message {{ .Values.env.vault_sns_message | quote }}; else echo "$(date) [VAULT ERROR]"; fi; else echo "$(date) [VAULT OK]"; fi' > /cronjob.sh && \
+          chmod +x /cronjob.sh && \
+          yum install -y cronie procps && \
+          crontab -l | { cat; echo "*/10 * * * * bash /crontab.bash" >> /crontab.log 2>&1; } | crontab - && \
+          crontab -l && \
+          crond -n & \
+          tail -f /crontab.log
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        securityContext: 
+          privileged: true
+          runAsUser: 0
+
+
+
+

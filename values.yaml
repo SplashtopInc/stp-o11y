@@ -2,6 +2,11 @@ appNodeSelector: &appNodeSelector devops
 eksClusterName: &eksClusterName local-cluster
 enabledvmproxy: &enabledvmproxy false
 vmProxyEndpoint: &vmProxyEndpoint ""
+env:
+  vault_addr: ""
+  vault_sns_arn: ""
+  vault_sns_subject: ""
+  vault_sns_message: ""
 
 kubernetes-event-exporter:
   enabled: true
