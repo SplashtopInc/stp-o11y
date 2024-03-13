@@ -47,7 +47,7 @@ spec:
           chmod +x /crontab.bash
           yum install -y cronie procps
           crontab -l
-          echo "*/10 * * * * bash /crontab.bash >> /crontab.log 2>&1" | crontab -
+          echo "{{ .Values.env.vault_check_period }} bash /crontab.bash >> /crontab.log 2>&1" | crontab -
           crontab -l
           crond -n & 
           tail -f /crontab.log
