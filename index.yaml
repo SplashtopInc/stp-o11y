@@ -3,7 +3,34 @@ entries:
   stp-o11y:
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-03-13T17:05:08.359307+08:00"
+    created: "2024-04-12T13:39:10.842055779Z"
+    dependencies:
+    - condition: kubernetes-event-exporter.enabled
+      name: kubernetes-event-exporter
+      repository: '@bitnami'
+      version: 2.15.2
+    - condition: prometheus-node-exporter.enabled
+      name: prometheus-node-exporter
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 4.30.2
+    - condition: victoria-metrics-agent.enabled
+      name: victoria-metrics-agent
+      repository: https://victoriametrics.github.io/helm-charts/
+      version: 0.9.11
+    - condition: kube-state-metrics.enabled
+      name: kube-state-metrics
+      repository: '@bitnami'
+      version: 3.14.2
+    description: A Helm chart for stp-o11y tools
+    digest: e1b4ea44eebb104ec1cc1c8b3e8daae828651a4774e3963953b70b379d90aeaa
+    name: stp-o11y
+    type: application
+    urls:
+    - stp-o11y-1.0.1.tgz
+    version: 1.0.1
+  - apiVersion: v2
+    appVersion: 0.0.0
+    created: "2024-04-12T13:39:10.834609763Z"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -30,7 +57,7 @@ entries:
     version: 1.0.0
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-03-13T17:05:08.352585+08:00"
+    created: "2024-04-12T13:39:10.824598718Z"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -45,7 +72,7 @@ entries:
     version: 0.1.2
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-03-13T17:05:08.350413+08:00"
+    created: "2024-04-12T13:39:10.821527432Z"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -60,7 +87,7 @@ entries:
     version: 0.1.1
   - apiVersion: v2
     appVersion: 0.0.0
-    created: "2024-03-13T17:05:08.346679+08:00"
+    created: "2024-04-12T13:39:10.817774684Z"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
       name: kubernetes-event-exporter
@@ -73,4 +100,4 @@ entries:
     urls:
     - stp-o11y-0.1.0.tgz
     version: 0.1.0
-generated: "2024-03-13T17:05:08.343892+08:00"
+generated: "2024-04-12T13:39:10.815723968Z"
