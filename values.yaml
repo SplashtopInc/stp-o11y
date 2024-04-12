@@ -74,6 +74,24 @@ prometheus-node-exporter:
       prometheus.io/scrape: "true"
       prometheus.io/port: "9100"
       prometheus.io/path: "/metrics"
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/os
+            operator: In
+            values:
+            - linux
+          - key: kubernetes.io/arch
+            operator: In
+            values:
+            - amd64
+            - arm64
+          - key: eks.amazonaws.com/compute-type
+            operator: NotIn
+            values:
+            - fargate
 
 vmproxy:
   enabled: *enabledvmproxy
@@ -106,3 +124,6 @@ victoria-metrics-agent:
     - http://victoria-metrics-cluster-vminsert.default:8480/insert/0/prometheus
     # send data to remoteWrite 
     # - http://remote-write-url:8428/api/v1/write
+
+vault_health_check:
+  enabled: true
