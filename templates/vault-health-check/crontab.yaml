@@ -38,7 +38,7 @@ spec:
       containers:
       - name: vault-health-check
         image: public.ecr.aws/aws-cli/aws-cli:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         command:
         - "/bin/bash"
         args:
@@ -48,6 +48,7 @@ spec:
           cp /crontab.sh /crontab.bash
           chmod +x /crontab.bash
           yum install -y cronie procps
+          [[ $? -ne 0 ]] && exit 1
           crontab -l
           echo "{{ .Values.env.vault_check_period }} bash /crontab.bash >> /crontab.log 2>&1" | crontab -
           crontab -l
