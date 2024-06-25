@@ -127,3 +127,72 @@ victoria-metrics-agent:
 
 vault_health_check:
   enabled: true
+
+telegraf:
+  fullnameOverride: "telegraf"
+  enabled: true
+  replicaCount: 1
+  image:
+    repo: "public.ecr.aws/docker/library/telegraf"
+    tag: "1.30.3-alpine"
+    pullPolicy: IfNotPresent
+  env:
+    - name: HOSTNAME
+      value: "telegraf-polling-service"
+  resources: 
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 128Mi
+      cpu: 100m
+  nodeSelector:
+    app: devops
+  service:
+    enabled: false
+  rbac:
+    create: true
+  pdb:
+    create: false
+  config:
+    agent:
+      interval: "5s"
+      round_interval: true
+      metric_batch_size: 1000
+      metric_buffer_limit: 10000
+      collection_jitter: "0s"
+      flush_interval: "5s"
+      flush_jitter: "0s"
+      precision: ""
+      debug: false
+      quiet: false
+      logfile: ""
+      hostname: "$HOSTNAME"
+      omit_hostname: false
+    outputs:
+      - http:
+          url: "https://vm-insert.example.com/insert/0/prometheus"
+          data_format: "prometheusremotewrite"
+  
+          headers: 
+            Content-Type: "application/x-protobuf"
+            Content-Encoding: "snappy"
+            X-Prometheus-Remote-Write-Version: "0.1.0"
+            
+    inputs:
+      - dns_query:
+          servers:
+            - "kube-dns.kube-system.svc.cluster.local."
+          timeout: "4s"
+          domains:
+            - "kubernetes.default.svc.cluster.local"
+            - "www.google.com"
+            - "uber.com"
+          tags:
+            datacenter: "local-cluster"
+  metrics:
+    create: true
+    health:
+      enabled: true
+      service_address: "http://:8888"
+      threshold: 5000.0
