@@ -2,7 +2,7 @@ apiVersion: v2
 name: stp-o11y
 description: A Helm chart for stp-o11y tools
 type: application
-version: 1.1.0
+version: 1.1.1
 appVersion: "0.0.0"
 dependencies:
 - name: kubernetes-event-exporter
@@ -22,6 +22,6 @@ dependencies:
   repository: "@bitnami"
   condition: kube-state-metrics.enabled
 - name: telegraf
-  version: 1.8.49
+  version: 1.8.53
   repository: "https://helm.influxdata.com/"
   condition: influxdata.enabled
