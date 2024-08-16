@@ -1,0 +1,47 @@
+name: PR Check Chart.yaml Version
+
+on:
+  pull_request:
+    paths:
+      - '*'
+      - '!.github/workflows/**'
+      - '!scripts/**'
+      - '!.gitignore'
+      - '!**/.helmignore'
+      - '!README.md'
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: yq - portable yaml processor
+        uses: mikefarah/yq@v4.9.8
+
+      - name: Check Chart.yaml version
+        run: |
+          yq -N e '.version | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))' charts/**/Chart.yaml > count.txt
+          find . -type f -name Chart.yaml > chart_yaml_count.txt
+          
+          echo "cat chart_yaml_count.txt"
+          cat chart_yaml_count.txt
+          echo "cat count.txt"
+          cat count.txt
+
+          count=$(cat count.txt | wc -l)
+          chart_yaml_count=$(cat chart_yaml_count.txt | wc -l)
+
+          if [[ $count != $chart_yaml_count ]]; then
+            echo "Please use vx.y.z versioning in Chart.yaml"
+            exit 1
+          else
+            echo "Nice Job"
+          fi
+          rm -rf count.txt
+          rm -rf chart_yaml_count.txt
