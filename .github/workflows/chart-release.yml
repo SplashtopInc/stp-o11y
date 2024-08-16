@@ -38,10 +38,10 @@ jobs:
           count=$(cat count.txt | wc -l)
           chart_yaml_count=$(cat chart_yaml_count.txt | wc -l)
 
-          if [[ $count != $chart_yaml_count ]]; then
-            echo  "release_check=false" >> $GITHUB_OUTPUT
-          else
+          if [[ $count == $chart_yaml_count ]]; then
             echo  "release_check=true" >> $GITHUB_OUTPUT
+          else
+            echo  "release_check=false" >> $GITHUB_OUTPUT
           fi
           rm -rf count.txt
           rm -rf chart_yaml_count.txt
