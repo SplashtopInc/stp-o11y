@@ -37,5 +37,9 @@ Session.vim
 **/*.history
 **/*.lock
 stp-o11y-*.tgz
-!Chart.lock
 !Chart.yaml
+
+/charts/*/charts
+/charts/charts
+/charts/*/requirements.lock
+/charts/*/Chart.lock
