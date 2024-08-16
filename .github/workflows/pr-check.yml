@@ -3,7 +3,7 @@ name: PR Check Commit Chart.yaml
 on:
   pull_request:
     paths:
-      - '*'
+      - '*/**/**'
       - '!.github/workflows/**'
       - '!scripts/**'
       - '!.gitignore'
