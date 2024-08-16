@@ -27,7 +27,6 @@ jobs:
       - name: Check if the chart version is not a release version
         id: check
         run: |
-          npx zx get-helm-depends-update.mjs
           yq -N e '.version | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))' charts/**/Chart.yaml > count.txt
           find . -type f -name Chart.yaml > chart_yaml_count.txt
           
