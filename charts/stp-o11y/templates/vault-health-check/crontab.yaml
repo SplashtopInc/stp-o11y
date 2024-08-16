@@ -1,0 +1,78 @@
+{{ if .Values.vault_health_check.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: vault-health-check-config
+    namespace: {{ .Release.Namespace }}
+data:
+    crontab.sh: |
+        #!/bin/bash
+        VAULT_STATUS=$(curl -sk -o /dev/null --head -w "%{http_code}" {{ .Values.env.vault_addr }}/v1/sys/health)
+        if [[ "${VAULT_STATUS}" -ne "200" ]]; then 
+            if [[ -n {{ .Values.env.vault_sns_arn | quote }} ]]; then 
+                aws sns publish --topic-arn {{ .Values.env.vault_sns_arn | quote }} --subject {{ .Values.env.vault_sns_subject | quote }} --message-structure "string" --message {{ .Values.env.vault_sns_message | quote }}; 
+            else 
+                echo "$(date) [VAULT ERROR]"; 
+            fi;
+        else 
+            echo "$(date) [VAULT OK]"; 
+        fi
+{{- end }}
+---
+{{ if .Values.vault_health_check.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-health-check
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-health-check
+  template:
+    metadata:
+      labels:
+        app: vault-health-check
+    spec:
+      containers:
+      - name: vault-health-check
+        image: public.ecr.aws/aws-cli/aws-cli:latest
+        imagePullPolicy: Always
+        command:
+        - "/bin/bash"
+        args:
+        - -c
+        - |
+          touch /crontab.log
+          cp /crontab.sh /crontab.bash
+          chmod +x /crontab.bash
+          yum install -y cronie procps
+          [[ $? -ne 0 ]] && exit 1
+          crontab -l
+          echo "{{ .Values.env.vault_check_period }} bash /crontab.bash >> /crontab.log 2>&1" | crontab -
+          crontab -l
+          crond -n & 
+          tail -f /crontab.log
+        resources:
+          requests:
+            cpu: 200m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        securityContext: 
+          privileged: true
+          runAsUser: 0
+        volumeMounts:
+        - name: vault-health-check-config
+          mountPath: /crontab.sh
+          subPath: crontab.sh
+      volumes:
+      - name: vault-health-check-config
+        configMap:
+          name: vault-health-check-config
+          items:
+          - key: crontab.sh
+            path: crontab.sh
+{{- end }}

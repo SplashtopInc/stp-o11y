@@ -7,7 +7,7 @@ on:
       - '!.github/workflows/**'
       - '!scripts/**'
       - '!.gitignore'
-      - '!.helmignore'
+      - '!**/.helmignore'
       - '!README.md'
 jobs:
   check:
