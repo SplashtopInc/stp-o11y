@@ -7,7 +7,7 @@ appVersion: "0.0.0"
 dependencies:
 - name: kubernetes-event-exporter
   version: 2.15.2
-  repository: https://charts.bitnami.com/bitnami"
+  repository: "https://charts.bitnami.com/bitnami"
   condition: kubernetes-event-exporter.enabled
 - name: prometheus-node-exporter
   version: 4.30.2
