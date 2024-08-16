@@ -6,6 +6,9 @@ on:
       - dt-*
       - feat-*
       - chore-*
+      - DT-*
+      - Feat-*
+      - Chore-*
     paths:
       - "**/Chart.yaml"
 
