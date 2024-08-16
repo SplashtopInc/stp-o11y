@@ -38,7 +38,7 @@ jobs:
           chart_yaml_count=$(cat chart_yaml_count.txt | wc -l)
 
           if [[ $count != $chart_yaml_count ]]; then
-            echo "Please use vx.y.z versioning in Chart.yaml"
+            echo "Please use x.y.z versioning in Chart.yaml"
             exit 1
           else
             echo "Nice Job"
