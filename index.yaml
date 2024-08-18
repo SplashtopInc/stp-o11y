@@ -3,6 +3,37 @@ entries:
   stp-o11y:
   - apiVersion: v2
     appVersion: 0.0.0
+    created: "2024-08-18T08:16:20.389307448Z"
+    dependencies:
+    - condition: kubernetes-event-exporter.enabled
+      name: kubernetes-event-exporter
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.15.2
+    - condition: prometheus-node-exporter.enabled
+      name: prometheus-node-exporter
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 4.30.2
+    - condition: victoria-metrics-agent.enabled
+      name: victoria-metrics-agent
+      repository: https://victoriametrics.github.io/helm-charts/
+      version: 0.9.11
+    - condition: kube-state-metrics.enabled
+      name: kube-state-metrics
+      repository: https://charts.bitnami.com/bitnami
+      version: 3.14.2
+    - condition: telegraf.enabled
+      name: telegraf
+      repository: https://helm.influxdata.com/
+      version: 1.8.53
+    description: A Helm chart for stp-o11y tools
+    digest: d835de7e3a45dbe1d852e6f002346b997f0ac6f2f07c0e5a65345efd163c6b95
+    name: stp-o11y
+    type: application
+    urls:
+    - https://github.com/SplashtopInc/stp-o11y/releases/download/stp-o11y-1.2.1-beta.1/stp-o11y-1.2.1-beta.1.tgz
+    version: 1.2.1-beta.1
+  - apiVersion: v2
+    appVersion: 0.0.0
     created: "2024-08-16T08:29:20.473764723Z"
     dependencies:
     - condition: kubernetes-event-exporter.enabled
@@ -344,4 +375,4 @@ entries:
     urls:
     - stp-o11y-0.1.0.tgz
     version: 0.1.0
-generated: "2024-08-16T08:29:20.473864691Z"
+generated: "2024-08-18T08:16:20.389401634Z"
