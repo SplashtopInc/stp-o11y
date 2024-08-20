@@ -1,0 +1,14 @@
+name: always-run-check
+
+on:
+  pull_request:
+    paths:
+      - '*/**/**'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check
+        run: |
+          echo "Check ... always-run-check ✅"
