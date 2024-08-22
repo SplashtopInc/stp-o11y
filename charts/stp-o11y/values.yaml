@@ -1,6 +1,5 @@
-appNodeSelector: &appNodeSelector devops
+# appNodeSelector: &appNodeSelector devops
 eksClusterName: &eksClusterName local-cluster
-enabledvmproxy: &enabledvmproxy false
 vmProxyEndpoint: &vmProxyEndpoint ""
 env:
   vault_addr: ""
@@ -10,7 +9,7 @@ env:
   vault_check_period: "*/1 * * * *"
 
 kubernetes-event-exporter:
-  enabled: true
+  enabled: false
   fullnameOverride: "kubernetes-event-exporter"
   networkPolicy:
     enabled: false
@@ -61,8 +60,8 @@ kube-state-metrics:
   fullnameOverride: "kube-state-metrics"
   networkPolicy:
     enabled: false
-  nodeSelector:
-    app: *appNodeSelector
+  # nodeSelector:
+  #   app: *appNodeSelector
 
 prometheus-node-exporter:
   enabled: true
@@ -93,12 +92,6 @@ prometheus-node-exporter:
             values:
             - fargate
 
-vmproxy:
-  enabled: *enabledvmproxy
-  datacenter: *eksClusterName
-  endpoint: *vmProxyEndpoint
-  nodeSelector:
-    app: *appNodeSelector
 
 victoria-metrics-agent:
   fullnameOverride: "victoria-metrics-agent"
@@ -112,8 +105,8 @@ victoria-metrics-agent:
     replicationFactor: 1
     updateStrategy:
       type: RollingUpdate
-  nodeSelector:
-    app: *appNodeSelector
+  # nodeSelector:
+  #   app: *appNodeSelector
   config:
     global:
       scrape_interval: 30s
@@ -336,11 +329,11 @@ victoria-metrics-agent:
     # - http://remote-write-url:8428/api/v1/write
 
 vault_health_check:
-  enabled: true
+  enabled: false
 
 telegraf:
   fullnameOverride: "telegraf"
-  enabled: true
+  enabled: false
   replicaCount: 1
   image:
     repo: "public.ecr.aws/docker/library/telegraf"
