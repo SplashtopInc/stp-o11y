@@ -1,0 +1,44 @@
+{{- if .Values.mtail.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mtail
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mtail
+  template:
+    metadata:
+      labels:
+        app: mtail
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/mtail/configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - name: mtail
+        image: "{{ .Values.mtail.image.repository }}:{{ .Values.mtail.image.tag }}"
+        args: [
+          "-logtostderr",
+          "-progs", "/etc/mtail",
+          "-port", "3903",
+          "-logs", "tcp://0.0.0.0:24224"
+        ]
+        ports:
+        - containerPort: 24224
+          name: log-input
+        - containerPort: 3903
+          name: metrics
+        resources:
+          {{- toYaml .Values.mtail.resources | nindent 10 }}
+        volumeMounts:
+        - name: mtail-config
+          mountPath: /etc/mtail
+      volumes:
+      - name: mtail-config
+        configMap:
+          name: mtail-config
+{{- end }}
