@@ -8,5 +8,5 @@ metadata:
     release: {{ .Release.Name }}
 data:
   nginx.mtail: |
-    {{ tpl .Values.nginxMtail . | nindent 4 }}
+    {{ tpl .Values.mtail.progs.nginx . | nindent 4 }}
 {{- end }}

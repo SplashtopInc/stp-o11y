@@ -401,5 +401,27 @@ telegraf:
       threshold: 5000.0
 
 mtail:
-  enabled: false
+  enabled: true
+  image:
+    repository: ghcr.io/google/mtail
+    tag: 3.0.8
   resources: {}
+  progs:
+    nginx: |-
+      counter parse_failures
+      hidden gauge line_parsed
+
+      counter mtail_nginx_requests_total by request_method, request_uri, status_code, app
+      counter mtail_nginx_response_time_seconds_sum by request_method, request_uri, status_code, app
+
+      /^.*'(?P<request_method>\S+) (?P<request_uri>[^ ]*) (?P<server_protocol>\S+)' (?P<status_code>[^ ]*) (.*) 'response_time: (?P<upstream_response_time>\S+)' .*labels.*?app.{1}(?P<app>\S+).{1}imageTag.*/ {
+          mtail_nginx_requests_total[$request_method][$request_uri][$status_code][$app]++
+          mtail_nginx_response_time_seconds_sum[$request_method][$request_uri][$status_code][$app] += float($upstream_response_time)
+
+          line_parsed = 1
+      }
+
+      line_parsed > 0 {
+          line_parsed = 0
+          parse_failures++
+      }
