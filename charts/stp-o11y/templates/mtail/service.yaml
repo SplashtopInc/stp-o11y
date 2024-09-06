@@ -1,0 +1,19 @@
+{{- if .Values.mtail.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: mtail-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    app: mtail
+  ports:
+  - name: log-input
+    port: 24224
+    targetPort: 24224
+  - name: metrics
+    port: 3903
+    targetPort: 3903
+{{- end }}

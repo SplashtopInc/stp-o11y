@@ -1,0 +1,12 @@
+{{- if .Values.mtail.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mtail-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
+data:
+  nginx.mtail: |
+    {{ tpl .Values.nginxMtail . | nindent 4 }}
+{{- end }}
