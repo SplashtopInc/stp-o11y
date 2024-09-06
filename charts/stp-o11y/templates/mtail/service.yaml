@@ -9,7 +9,7 @@ metadata:
   annotations:
     prometheus.io/port: "3903"
     prometheus.io/path: "/metrics"
-    prometheus.io/scrape: true
+    prometheus.io/scrape: "true"
 spec:
   selector:
     app: mtail
