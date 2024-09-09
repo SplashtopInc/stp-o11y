@@ -402,6 +402,7 @@ telegraf:
 
 mtail:
   enabled: false
+  nodeSelector: {}
   image:
     repository: ghcr.io/google/mtail
     tag: 3.0.8
