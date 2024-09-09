@@ -18,6 +18,9 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/mtail/configmap.yaml") . | sha256sum }}
     spec:
+      {{- with .Values.mtail.nodeSelector }}
+      nodeSelector: {{ toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: mtail
         image: "{{ .Values.mtail.image.repository }}:{{ .Values.mtail.image.tag }}"
