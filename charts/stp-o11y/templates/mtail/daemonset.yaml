@@ -25,7 +25,7 @@ spec:
         - /etc/mtail
         - -port
         - "3903"
-        {{- range .Values.containerLogs }}
+        {{- range .Values.mtail.containerLogs }}
         - "-logs"
         - "/var/log/containers/{{ . }}"
         {{- end }}
