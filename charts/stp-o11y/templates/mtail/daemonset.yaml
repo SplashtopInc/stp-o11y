@@ -21,7 +21,7 @@ spec:
       - name: mtail
         image: "{{ .Values.mtail.image.repository }}:{{ .Values.mtail.image.tag }}"
         args: 
-        - logtostderr
+        - -logtostderr
         - -progs
         - /etc/mtail
         - -port
