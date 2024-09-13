@@ -20,29 +20,18 @@ spec:
         prometheus.io/path: "/metrics"
         prometheus.io/scrape: "true"
     spec:
+      {{- with .Values.mtail.nodeSelector }}
       nodeSelector:
-        kubernetes.io/os: linux
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mtail.tolerations }}
       tolerations:
-        - operator: Exists
-          effect: NoSchedule
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mtail.affinity }}
       affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/os
-                    operator: In
-                    values:
-                      - linux
-                  - key: kubernetes.io/arch
-                    operator: In
-                    values:
-                      - amd64
-                      - arm64
-                  - key: eks.amazonaws.com/compute-type
-                    operator: NotIn
-                    values:
-                      - fargate
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: mtail
         image: "{{ .Values.mtail.image.repository }}:{{ .Values.mtail.image.tag }}"
