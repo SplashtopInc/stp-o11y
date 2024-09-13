@@ -8,5 +8,20 @@ metadata:
     release: {{ .Release.Name }}
 data:
   nginx.mtail: |
+    hidden gauge pod_name
+    hidden gauge namespace
+    hidden gauge container_name
+    hidden gauge app_name
+
+    getfilename() =~ /\/var\/log\/containers\/(?P<pod_name>\S+)_(?P<namespace>\S+)_(?P<container_name>\S+).log/ {
+      pod_name = $pod_name
+      namespace = $namespace
+      container_name = $container_name
+
+      pod_name =~ /^(?P<app_name>\S+)-\S+-\S+/ {
+        app_name = $app_name
+      }
+    }
+
     {{ tpl .Values.mtail.progs.nginx . | nindent 4 }}
 {{- end }}

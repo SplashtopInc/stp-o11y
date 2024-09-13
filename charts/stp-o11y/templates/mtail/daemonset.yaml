@@ -16,6 +16,9 @@ spec:
         app: mtail
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/mtail/configmap.yaml") . | sha256sum }}
+        prometheus.io/port: "3903"
+        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: "true"
     spec:
       nodeSelector:
         kubernetes.io/os: linux
@@ -61,8 +64,20 @@ spec:
         volumeMounts:
         - name: mtail-config
           mountPath: /etc/mtail
+        - name: varlogcontainers
+          readOnly: true
+          mountPath: /var/log/containers
+        - name: varlogpods
+          readOnly: true
+          mountPath: /var/log/pods
       volumes:
       - name: mtail-config
         configMap:
           name: mtail-config
+      - name: varlogcontainers
+        hostPath:
+          path: /var/log/containers
+      - name: varlogpods
+        hostPath:
+          path: /var/log/pods
 {{- end }}
