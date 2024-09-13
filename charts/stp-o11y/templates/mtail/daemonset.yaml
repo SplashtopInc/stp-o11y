@@ -17,6 +17,29 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/mtail/configmap.yaml") . | sha256sum }}
     spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+                      - arm64
+                  - key: eks.amazonaws.com/compute-type
+                    operator: NotIn
+                    values:
+                      - fargate
       containers:
       - name: mtail
         image: "{{ .Values.mtail.image.repository }}:{{ .Values.mtail.image.tag }}"

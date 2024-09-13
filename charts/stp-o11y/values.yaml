@@ -401,8 +401,7 @@ telegraf:
       threshold: 5000.0
 
 mtail:
-  enabled: true
-  nodeSelector: {}
+  enabled: false
   image:
     repository: ghcr.io/google/mtail
     tag: 3.0.8
