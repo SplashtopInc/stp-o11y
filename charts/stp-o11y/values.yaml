@@ -429,11 +429,6 @@ mtail:
               operator: NotIn
               values:
               - fargate
-            - key: app
-              operator: NotIn
-              values:
-              - devops
-              - be-app-compu-list
   containerLogs: []
   # <pod-name>_<namespace>_<container-name>-<container-id>.log
   # - ".*.log"
