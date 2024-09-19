@@ -1,0 +1,72 @@
+{{- if .Values.mtail.enabled -}}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: mtail
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app: mtail
+  template:
+    metadata:
+      labels:
+        app: mtail
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/mtail/configmap.yaml") . | sha256sum }}
+        prometheus.io/port: "3903"
+        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: "true"
+    spec:
+      {{- with .Values.mtail.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mtail.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mtail.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: mtail
+        image: "{{ .Values.mtail.image.repository }}:{{ .Values.mtail.image.tag }}"
+        args: 
+        - -logtostderr
+        - -progs
+        - /etc/mtail
+        - -port
+        - "3903"
+        {{- range .Values.mtail.containerLogs }}
+        - "-logs"
+        - "/var/log/containers/{{ . }}"
+        {{- end }}
+        ports:
+        - containerPort: 3903
+          name: metrics
+        resources:
+          {{- toYaml .Values.mtail.resources | nindent 10 }}
+        volumeMounts:
+        - name: mtail-config
+          mountPath: /etc/mtail
+        - name: varlogcontainers
+          readOnly: true
+          mountPath: /var/log/containers
+        - name: varlogpods
+          readOnly: true
+          mountPath: /var/log/pods
+      volumes:
+      - name: mtail-config
+        configMap:
+          name: mtail-config
+      - name: varlogcontainers
+        hostPath:
+          path: /var/log/containers
+      - name: varlogpods
+        hostPath:
+          path: /var/log/pods
+{{- end }}
