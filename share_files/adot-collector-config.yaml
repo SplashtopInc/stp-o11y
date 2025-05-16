@@ -8,12 +8,12 @@ receivers:
         scrape_interval: 10s
         static_configs:
           - targets:
-              - $${env:HOSTNAME}:8888
+              - ${env:HOSTNAME}:8888
 
 exporters:
   debug: {}
   otlphttp/ecs-otel:
-    endpoint: $${otlp_exporter_endpoint}
+    endpoint: ${otlp_exporter_endpoint}
 
 processors:
   batch: {}
@@ -24,10 +24,10 @@ processors:
   resource:
     attributes:
       - key: "splashtop.datacenter"
-        value: $${ecs_cluster_name}
+        value: ${ecs_cluster_name}
         action: "insert"
       - key: "splashtop.region"
-        value: $${ecs_region}
+        value: ${ecs_region}
         action: "insert"
 
 extensions:
@@ -37,7 +37,7 @@ extensions:
 service:
   telemetry:
     metrics:
-      address: $${env:HOSTNAME}:8888
+      address: ${env:HOSTNAME}:8888
   extensions: [health_check]
   pipelines:
     metrics:
