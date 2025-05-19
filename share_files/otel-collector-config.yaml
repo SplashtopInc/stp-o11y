@@ -64,7 +64,7 @@ service:
         - memory_limiter
         - resource
         - batch
-      exporters: ${env:otel_exporters_list}
+      exporters: [${env:otel_exporters_list}]
     metrics:
       receivers:
         - otlp/ecs-otel
