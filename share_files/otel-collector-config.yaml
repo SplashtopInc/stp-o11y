@@ -15,7 +15,8 @@ receivers:
               - ${env:HOSTNAME}:8888
 
 exporters:
-  debug: {}
+  debug:
+    verbosity: detailed
   otlphttp/cent-monitor:
     endpoint: ${otlp_exporter_endpoint_cent}
   otlphttp/tperd-monitor:
