@@ -64,7 +64,7 @@ service:
         - memory_limiter
         - resource
         - batch
-      exporters: [${env:otel_conf_exporter}]
+      exporters: [${env:otel_conf_exporter}, debug]
     metrics:
       receivers:
         - otlp/ecs-otel
@@ -72,7 +72,7 @@ service:
         - memory_limiter
         - resource
         - batch
-      exporters: [${env:otel_conf_exporter}]
+      exporters: [${env:otel_conf_exporter}, debug]
     metrics/self-metrics:
       receivers:
         - prometheus/ecs
@@ -81,7 +81,7 @@ service:
         - resource
         - resource/self-metrics
         - batch
-      exporters: [${env:otel_conf_exporter}]
+      exporters: [${env:otel_conf_exporter}, debug]
     logs:
       receivers:
         - otlp/ecs-otel
@@ -89,4 +89,4 @@ service:
         - memory_limiter
         - resource
         - batch
-      exporters: [${env:otel_conf_exporter}]
+      exporters: [${env:otel_conf_exporter}, debug]
