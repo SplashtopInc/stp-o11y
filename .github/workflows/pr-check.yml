@@ -9,6 +9,7 @@ on:
       - '!.gitignore'
       - '!**/.helmignore'
       - '!README.md'
+      - '!share_files/**'
 jobs:
   check:
     runs-on: ubuntu-latest
