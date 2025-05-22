@@ -31,19 +31,19 @@ processors:
   resource:
     attributes:
       - key: "splashtop.env"
-        value: ${splashtop_env}
+        value: ${env:splashtop_env}
         action: "insert"
       - key: "splashtop.stack"
-        value: ${splashtop_stack}
+        value: ${env:splashtop_stack}
         action: "insert"
   # add attribute to data from self
   resource/self-metrics:
     attributes:
       - key: "splashtop.datacenter"
-        value: ${ecs_cluster_name}
+        value: ${env:ecs_cluster_name}
         action: "insert"
       - key: "splashtop.region"
-        value: ${ecs_region}
+        value: ${env:ecs_region}
         action: "insert"
 
 connectors:
