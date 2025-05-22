@@ -16,7 +16,7 @@ receivers:
 
 exporters:
   debug:
-    verbosity: detailed
+    verbosity: ${env:otel_conf_debug_verbosity}
   otlphttp/cent-monitor:
     endpoint: "https://cent-otel.ops.splashtop.com:443"
   otlphttp/tperd-monitor:
@@ -46,6 +46,47 @@ processors:
         value: ${ecs_region}
         action: "insert"
 
+connectors:
+  routing/traces:
+    error_mode: ignore
+    match_once: true
+    table:
+      - context: span
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "PROD") and IsMatch(resource.attributes["splashtop.stack"], "OC")
+        pipelines: [traces/multi-exporters]
+      - context: span
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
+        pipelines: [traces/multi-exporters]
+      - context: span
+        statement: route()
+        pipelines: [traces/single-exporter]
+  routing/metrics:
+    error_mode: ignore
+    match_once: true
+    table:
+      - context: metric
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "PROD") and IsMatch(resource.attributes["splashtop.stack"], "OC")
+        pipelines: [metrics/multi-exporters]
+      - context: metric
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
+        pipelines: [metrics/multi-exporters]
+      - context: metric
+        statement: route()
+        pipelines: [metrics/single-exporter]
+  routing/logs:
+    error_mode: ignore
+    match_once: true
+    table:
+      - context: log
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "PROD") and IsMatch(resource.attributes["splashtop.stack"], "OC")
+        pipelines: [logs/multi-exporters]
+      - context: log
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
+        pipelines: [logs/multi-exporters]
+      - context: log
+        statement: route()
+        pipelines: [logs/single-exporter]
+
 extensions:
   health_check:
     endpoint: 0.0.0.0:13133
@@ -58,35 +99,42 @@ service:
     - health_check
   pipelines:
     traces:
-      receivers:
-        - otlp/ecs-otel
-      processors:
-        - memory_limiter
-        - resource
-        - batch
-      exporters: ["${env:otel_conf_exporter}"]
+      receivers: [otlp/ecs-otel]
+      processors: [memory_limiter, resource, batch]
+      exporters: [routing/traces]
+    traces/single-exporter:
+      receivers: [routing/traces]
+      processors: [memory_limiter, batch]
+      exporters: ["${env:otel_conf_exporter}", debug]
+    traces/multi-exporters:
+      receivers: [routing/traces]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor, debug]
     metrics:
-      receivers:
-        - otlp/ecs-otel
-      processors:
-        - memory_limiter
-        - resource
-        - batch
-      exporters: ["${env:otel_conf_exporter}"]
+      receivers: [otlp/ecs-otel]
+      processors: [memory_limiter, resource, batch]
+      exporters: [routing/metrics]
     metrics/self-metrics:
-      receivers:
-        - prometheus/ecs
-      processors:
-        - memory_limiter
-        - resource
-        - resource/self-metrics
-        - batch
-      exporters: ["${env:otel_conf_exporter}"]
+      receivers: [prometheus/ecs]
+      processors: [memory_limiter, resource, resource/self-metrics, batch]
+      exporters: [routing/metrics]
+    metrics/single-exporter:
+      receivers: [routing/metrics]
+      processors: [memory_limiter, batch]
+      exporters: ["${env:otel_conf_exporter}", debug]
+    metrics/multi-exporters:
+      receivers: [routing/metrics]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor, debug]
     logs:
-      receivers:
-        - otlp/ecs-otel
-      processors:
-        - memory_limiter
-        - resource
-        - batch
-      exporters: ["${env:otel_conf_exporter}"]
+      receivers: [otlp/ecs-otel]
+      processors: [memory_limiter, resource, batch]
+      exporters: [routing/logs]
+    logs/single-exporter:
+      receivers: [routing/logs]
+      processors: [memory_limiter, batch]
+      exporters: ["${env:otel_conf_exporter}", debug]
+    logs/multi-exporters:
+      receivers: [routing/logs]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor, debug]
