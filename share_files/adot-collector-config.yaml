@@ -13,7 +13,7 @@ receivers:
 exporters:
   debug: {}
   otlphttp/ecs-otel:
-    endpoint: ${otlp_exporter_endpoint}
+    endpoint: ${env:otlp_exporter_endpoint}
 
 processors:
   batch: {}
@@ -24,10 +24,10 @@ processors:
   resource:
     attributes:
       - key: "splashtop.datacenter"
-        value: ${ecs_cluster_name}
+        value: ${env:ecs_cluster_name}
         action: "insert"
       - key: "splashtop.region"
-        value: ${ecs_region}
+        value: ${env:ecs_region}
         action: "insert"
 
 extensions:
