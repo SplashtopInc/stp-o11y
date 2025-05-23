@@ -44,3 +44,14 @@ git commit -a -m "release version"
 
 git push origin gh-pages
 ```
+
+## Share files
+`share_files` folder is used to serve common config or other files for o11y usage.
+
+### Opentelemetry collector config.yaml
+Opentelemetry allows to use HTTP URL to download config file. [link](https://opentelemetry.io/docs/collector/configuration/#location)
+
+Use below as the CMD for opentelemetry collector container.
+```
+--config=https://splashtopinc.github.io/stp-o11y/share_files/<file-name>
+```

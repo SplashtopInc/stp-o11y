@@ -1,0 +1,46 @@
+receivers:
+  awsecscontainermetrics:
+    collection_interval: 30s
+  prometheus/ecs:
+    config:
+      scrape_configs:
+      - job_name: adot-collector
+        scrape_interval: 10s
+        static_configs:
+          - targets:
+              - ${env:HOSTNAME}:8888
+
+exporters:
+  debug: {}
+  otlphttp/ecs-otel:
+    endpoint: ${env:otlp_exporter_endpoint}
+
+processors:
+  batch: {}
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  resource:
+    attributes:
+      - key: "splashtop.datacenter"
+        value: ${env:ecs_cluster_name}
+        action: "insert"
+      - key: "splashtop.region"
+        value: ${env:ecs_region}
+        action: "insert"
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  telemetry:
+    metrics:
+      address: ${env:HOSTNAME}:8888
+  extensions: [health_check]
+  pipelines:
+    metrics:
+      receivers: [awsecscontainermetrics, prometheus/ecs]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel]
