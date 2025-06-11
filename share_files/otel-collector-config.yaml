@@ -48,7 +48,7 @@ processors:
 
 connectors:
   # routing rules: 
-  # 1. DEV -> tperd-monitor
+  # 1. DEV -> tperd-monitor & cent-monitor (for load testing)
   # 2. PROD-OC & QA-EU -> both tperd-monitor & cent-monitor
   # 3. OTHERS -> cent-monitor
   routing/traces:
@@ -63,7 +63,7 @@ connectors:
         pipelines: [traces/multi-exporters]
       - context: span
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "DEV")
-        pipelines: [traces/tperd-monitor]
+        pipelines: [traces/multi-exporters]
       - context: span
         statement: route()
         pipelines: [traces/cent-monitor]
@@ -79,7 +79,7 @@ connectors:
         pipelines: [metrics/multi-exporters]
       - context: metric
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "DEV")
-        pipelines: [metrics/tperd-monitor]
+        pipelines: [metrics/multi-exporters]
       - context: metric
         statement: route()
         pipelines: [metrics/cent-monitor]
@@ -95,7 +95,7 @@ connectors:
         pipelines: [logs/multi-exporters]
       - context: log
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "DEV")
-        pipelines: [logs/tperd-monitor]
+        pipelines: [logs/multi-exporters]
       - context: log
         statement: route()
         pipelines: [logs/cent-monitor]
