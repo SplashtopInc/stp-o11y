@@ -1,4 +1,10 @@
 receivers:
+  otlp/ecs-adot:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
   awsecscontainermetrics:
     collection_interval: 30s
   prometheus/ecs:
@@ -40,7 +46,19 @@ service:
       address: ${env:HOSTNAME}:8888
   extensions: [health_check]
   pipelines:
-    metrics:
+    metrics/awsecscontainer:
       receivers: [awsecscontainermetrics, prometheus/ecs]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel]
+    metrics:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel]
+    traces:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel]
+    logs:
+      receivers: [otlp/ecs-adot]
       processors: [memory_limiter, resource, batch]
       exporters: [otlphttp/ecs-otel]
