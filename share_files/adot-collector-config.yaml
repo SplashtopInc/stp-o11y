@@ -17,7 +17,8 @@ receivers:
               - ${env:HOSTNAME}:8888
 
 exporters:
-  debug: {}
+  debug:
+    verbosity: ${env:otel_conf_debug_verbosity}
   otlphttp/ecs-otel:
     endpoint: ${env:otlp_exporter_endpoint}
 
