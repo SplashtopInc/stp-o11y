@@ -1,0 +1,79 @@
+receivers:
+  otlp/ecs-adot:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  awsecscontainermetrics:
+    collection_interval: 30s
+  awscloudwatch:
+    region: ${env:ecs_region}
+    logs:
+      poll_interval: 1m
+      groups:
+        autodiscover:
+          limit: 5
+          prefix: "/ecs/${env:ecs_cluster_name}/${env:ecs_service_name}"
+          streams:
+            prefixes: ["ecs/${env:ecs_service_name}"]
+  prometheus/ecs:
+    config:
+      scrape_configs:
+      - job_name: adot-collector
+        scrape_interval: 10s
+        static_configs:
+          - targets:
+              - ${env:HOSTNAME}:8888
+
+exporters:
+  debug:
+    verbosity: ${env:otel_conf_debug_verbosity}
+  otlphttp/ecs-otel:
+    endpoint: ${env:otlp_exporter_endpoint}
+
+processors:
+  batch: {}
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  resource:
+    attributes:
+      - key: "splashtop.datacenter"
+        value: ${env:ecs_cluster_name}
+        action: "insert"
+      - key: "splashtop.region"
+        value: ${env:ecs_region}
+        action: "insert"
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  telemetry:
+    metrics:
+      address: ${env:HOSTNAME}:8888
+  extensions: [health_check]
+  pipelines:
+    metrics/awsecscontainer:
+      receivers: [awsecscontainermetrics, prometheus/ecs]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    metrics:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    traces:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    logs:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    cloudwatch:
+      receivers: [awscloudwatch]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
