@@ -73,7 +73,7 @@ service:
       receivers: [otlp/ecs-adot]
       processors: [memory_limiter, resource, batch]
       exporters: [otlphttp/ecs-otel, debug]
-    cloudwatch:
+    logs/awscloudwatch:
       receivers: [awscloudwatch]
       processors: [memory_limiter, resource, batch]
       exporters: [otlphttp/ecs-otel, debug]
