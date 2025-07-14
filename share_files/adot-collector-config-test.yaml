@@ -7,16 +7,23 @@ receivers:
         endpoint: 0.0.0.0:4318
   awsecscontainermetrics:
     collection_interval: 30s
-  awscloudwatch:
-    region: ${env:ecs_region}
-    logs:
-      poll_interval: 1m
-      groups:
-        autodiscover:
-          limit: 5
-          prefix: "/ecs/${env:ecs_cluster_name}/${env:ecs_service_name}"
-          streams:
-            prefixes: ["ecs/${env:ecs_service_name}"]
+  # awscloudwatch:
+  #   region: ${env:ecs_region}
+  #   logs:
+  #     poll_interval: 1m
+  #     groups:
+  #       autodiscover:
+  #         limit: 5
+  #         prefix: "/ecs/${env:ecs_cluster_name}/${env:ecs_service_name}"
+  #         streams:
+  #           prefixes: ["ecs/${env:ecs_service_name}"]
+  filelog:
+    include: [ /mnt/ephemeral/logs/*.json ]
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%d %H:%M:%S'
   prometheus/ecs:
     config:
       scrape_configs:
@@ -54,7 +61,7 @@ extensions:
 service:
   telemetry:
     metrics:
-      address: ${env:HOSTNAME}:8888
+      # address: ${env:HOSTNAME}:8888
   extensions: [health_check]
   pipelines:
     metrics/awsecscontainer:
@@ -73,7 +80,7 @@ service:
       receivers: [otlp/ecs-adot]
       processors: [memory_limiter, resource, batch]
       exporters: [otlphttp/ecs-otel, debug]
-    logs/awscloudwatch:
-      receivers: [awscloudwatch]
+    logs/filelog:
+      receivers: [filelog]
       processors: [memory_limiter, resource, batch]
       exporters: [otlphttp/ecs-otel, debug]
