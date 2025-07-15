@@ -38,8 +38,8 @@ receivers:
 exporters:
   debug:
     verbosity: ${env:otel_conf_debug_verbosity}
-  # otlphttp/ecs-otel:
-  #   endpoint: ${env:otlp_exporter_endpoint}
+  otlphttp/ecs-otel:
+    endpoint: ${env:otlp_exporter_endpoint}
 
 processors:
   batch: {}
@@ -84,5 +84,5 @@ service:
     #   exporters: [otlphttp/ecs-otel, debug]
     logs/filelog:
       receivers: [filelog]
-      processors: [memory_limiter, batch]
-      exporters: [debug]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
