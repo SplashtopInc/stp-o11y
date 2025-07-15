@@ -70,18 +70,18 @@ service:
     #   receivers: [awsecscontainermetrics, prometheus/ecs]
     #   processors: [memory_limiter, resource, batch]
     #   exporters: [otlphttp/ecs-otel, debug]
-    # metrics:
-    #   receivers: [otlp/ecs-adot]
-    #   processors: [memory_limiter, resource, batch]
-    #   exporters: [otlphttp/ecs-otel, debug]
-    # traces:
-    #   receivers: [otlp/ecs-adot]
-    #   processors: [memory_limiter, resource, batch]
-    #   exporters: [otlphttp/ecs-otel, debug]
-    # logs:
-    #   receivers: [otlp/ecs-adot]
-    #   processors: [memory_limiter, resource, batch]
-    #   exporters: [otlphttp/ecs-otel, debug]
+    metrics:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    traces:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    logs:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
     logs/filelog:
       receivers: [filelog]
       processors: [memory_limiter, resource, batch]
