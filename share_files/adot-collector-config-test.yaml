@@ -18,7 +18,7 @@ receivers:
   #         streams:
   #           prefixes: ["ecs/${env:ecs_service_name}"]
   filelog:
-    include: [ /mnt/ephemeral/logs/*.json ]
+    include: [ /mnt/logs/*.json, /mnt/logs/*.log ]
     operators:
       - type: json_parser
         timestamp:
@@ -64,10 +64,10 @@ service:
       # address: ${env:HOSTNAME}:8888
   extensions: [health_check]
   pipelines:
-    metrics/awsecscontainer:
-      receivers: [awsecscontainermetrics, prometheus/ecs]
-      processors: [memory_limiter, resource, batch]
-      exporters: [otlphttp/ecs-otel, debug]
+    # metrics/awsecscontainer:
+    #   receivers: [awsecscontainermetrics, prometheus/ecs]
+    #   processors: [memory_limiter, resource, batch]
+    #   exporters: [otlphttp/ecs-otel, debug]
     metrics:
       receivers: [otlp/ecs-adot]
       processors: [memory_limiter, resource, batch]
