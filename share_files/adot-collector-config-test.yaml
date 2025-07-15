@@ -23,7 +23,7 @@ receivers:
       - type: json_parser
         timestamp:
           parse_from: attributes.time
-          layout: '%Y-%m-%d %H:%M:%S'
+          layout: '%Y-%m-%d %H:%M:%S %z'
         severity:
           parse_from: attributes.severity
   prometheus/ecs:
@@ -55,6 +55,11 @@ processors:
       - key: "splashtop.region"
         value: ${env:ecs_region}
         action: "insert"
+  resource/log:
+    attributes:
+      - key: "service.name"
+        value: ${env:ecs_service_name}
+        action: "insert"
 
 extensions:
   health_check:
@@ -84,5 +89,5 @@ service:
       exporters: [otlphttp/ecs-otel, debug]
     logs/filelog:
       receivers: [filelog]
-      processors: [memory_limiter, resource, batch]
+      processors: [memory_limiter, resource, resource/log, batch]
       exporters: [otlphttp/ecs-otel, debug]
