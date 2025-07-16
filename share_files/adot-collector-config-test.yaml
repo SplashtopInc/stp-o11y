@@ -68,13 +68,13 @@ extensions:
 service:
   telemetry:
     metrics:
-      # address: ${env:HOSTNAME}:8888
+      address: ${env:HOSTNAME}:8888
   extensions: [health_check]
   pipelines:
-    # metrics/awsecscontainer:
-    #   receivers: [awsecscontainermetrics, prometheus/ecs]
-    #   processors: [memory_limiter, resource, batch]
-    #   exporters: [otlphttp/ecs-otel, debug]
+    metrics/awsecscontainer:
+      receivers: [awsecscontainermetrics, prometheus/ecs]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
     metrics:
       receivers: [otlp/ecs-adot]
       processors: [memory_limiter, resource, batch]
