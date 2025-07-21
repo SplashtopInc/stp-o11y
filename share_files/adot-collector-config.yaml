@@ -27,7 +27,7 @@ receivers:
 
 exporters:
   debug:
-    verbosity: ${env:otel_conf_debug_verbosity}
+    verbosity: ${env:otel_conf_debug_verbosity:basic}
   otlphttp/ecs-otel:
     endpoint: ${env:otlp_exporter_endpoint}
 
@@ -40,15 +40,15 @@ processors:
   resource:
     attributes:
       - key: "splashtop.datacenter"
-        value: ${env:ecs_cluster_name}
+        value: ${env:ecs_cluster_name:default-cluster}
         action: "insert"
       - key: "splashtop.region"
-        value: ${env:ecs_region}
+        value: ${env:ecs_region:default-region}
         action: "insert"
   resource/log:
     attributes:
       - key: "service.name"
-        value: ${env:ecs_service_name}
+        value: ${env:ecs_service_name:default-service}
         action: "insert"
 
 extensions:
