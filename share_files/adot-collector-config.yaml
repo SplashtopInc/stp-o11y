@@ -1,6 +1,21 @@
 receivers:
+  otlp/ecs-adot:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
   awsecscontainermetrics:
     collection_interval: 30s
+  filelog:
+    include: [ /mnt/logs/*.json, /mnt/logs/*.log ]
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%d %H:%M:%S %z'
+        severity:
+          parse_from: attributes.severity
   prometheus/ecs:
     config:
       scrape_configs:
@@ -11,7 +26,8 @@ receivers:
               - ${env:HOSTNAME}:8888
 
 exporters:
-  debug: {}
+  debug:
+    verbosity: ${env:otel_conf_debug_verbosity:-basic}
   otlphttp/ecs-otel:
     endpoint: ${env:otlp_exporter_endpoint}
 
@@ -24,10 +40,15 @@ processors:
   resource:
     attributes:
       - key: "splashtop.datacenter"
-        value: ${env:ecs_cluster_name}
+        value: ${env:ecs_cluster_name:-default-cluster}
         action: "insert"
       - key: "splashtop.region"
-        value: ${env:ecs_region}
+        value: ${env:ecs_region:-default-region}
+        action: "insert"
+  resource/log:
+    attributes:
+      - key: "service.name"
+        value: ${env:ecs_service_name:-default-service}
         action: "insert"
 
 extensions:
@@ -40,7 +61,23 @@ service:
       address: ${env:HOSTNAME}:8888
   extensions: [health_check]
   pipelines:
-    metrics:
+    metrics/awsecscontainer:
       receivers: [awsecscontainermetrics, prometheus/ecs]
       processors: [memory_limiter, resource, batch]
-      exporters: [otlphttp/ecs-otel]
+      exporters: [otlphttp/ecs-otel, debug]
+    metrics:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    traces:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    logs:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    logs/filelog:
+      receivers: [filelog]
+      processors: [memory_limiter, resource, resource/log, batch]
+      exporters: [otlphttp/ecs-otel, debug]
