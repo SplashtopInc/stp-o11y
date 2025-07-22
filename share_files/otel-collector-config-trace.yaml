@@ -5,6 +5,7 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+        max_frame_size: 10485760
   prometheus/ecs:
     config:
       scrape_configs:
