@@ -26,8 +26,8 @@ exporters:
     resolver:
       static:
         hostnames:
-        - http://otel-collector-trace-0.otel-collector.local:4318
-        - http://otel-collector-trace-1.otel-collector.local:4318
+        - http://otel-collector-trace-0.otel-collector.local:4317
+        - http://otel-collector-trace-1.otel-collector.local:4317
     routing_key: traceID
   otlphttp/cent-monitor:
     endpoint: "https://cent-otel.ops.splashtop.com:443"
