@@ -8,7 +8,7 @@ receivers:
   prometheus/ecs:
     config:
       scrape_configs:
-      - job_name: opentelemetry-collector
+      - job_name: opentelemetry-collector-trace
         scrape_interval: 10s
         static_configs:
           - targets:
@@ -17,18 +17,6 @@ receivers:
 exporters:
   debug:
     verbosity: ${env:otel_conf_debug_verbosity}
-  loadbalancing/trace:
-    protocol:
-      otlp:
-        timeout: 1s
-        tls:
-          insecure: true
-    resolver:
-      static:
-        hostnames:
-        - http://otel-collector-trace-0.otel-collector.local:4317
-        - http://otel-collector-trace-1.otel-collector.local:4317
-    routing_key: traceID
   otlphttp/cent-monitor:
     endpoint: "https://cent-otel.ops.splashtop.com:443"
   otlphttp/tperd-monitor:
@@ -57,6 +45,29 @@ processors:
       - key: "splashtop.region"
         value: ${env:ecs_region}
         action: "insert"
+  tail_sampling:
+    # The quantities of decision_wait and num_traces will affect memory usage; therefore, after adjustment, it is necessary to ensure sufficient memory is available.
+    decision_wait: 5s # The time to decide. has to be more than the latency policy’s threshold_ms.
+    num_traces: 450000 # The amount of traces handled, if it goes over this, gets dumped.
+    expected_new_traces_per_sec: 20000 # The amount of traces expected per second.
+    policies:
+      [
+        {
+          name: "error-policy",
+          type: "status_code",
+          status_code: { status_codes: ["ERROR"] }
+        },
+        {
+          name: "latency-policy",
+          type: "latency",
+          latency: { threshold_ms: 3000 }
+        },
+        {
+          name: "default-policy",
+          type: "probabilistic",
+          probabilistic: { sampling_percentage: 10 }
+        }
+      ]
 
 connectors:
   # routing rules: 
@@ -95,23 +106,6 @@ connectors:
       - context: metric
         statement: route()
         pipelines: [metrics/cent-monitor]
-  routing/logs:
-    error_mode: ignore
-    match_once: true
-    table:
-      - context: log
-        statement: route() where IsMatch(resource.attributes["splashtop.env"], "PROD") and IsMatch(resource.attributes["splashtop.stack"], "OC")
-        pipelines: [logs/multi-exporters]
-      - context: log
-        statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
-        pipelines: [logs/multi-exporters]
-      - context: log
-        statement: route() where IsMatch(resource.attributes["splashtop.env"], "DEV")
-        pipelines: [logs/multi-exporters]
-      - context: log
-        statement: route()
-        pipelines: [logs/cent-monitor]
-
 extensions:
   health_check:
     endpoint: 0.0.0.0:13133
@@ -125,23 +119,23 @@ service:
   pipelines:
     traces:
       receivers: [otlp/ecs-otel]
-      processors: [memory_limiter, resource, batch]
+      processors: [memory_limiter, batch, tail_sampling]
       exporters: [routing/traces]
     traces/tperd-monitor:
       receivers: [routing/traces]
       processors: [memory_limiter, batch]
-      exporters: [loadbalancing/trace, debug]
+      exporters: [otlphttp/tperd-monitor, debug]
     traces/cent-monitor:
       receivers: [routing/traces]
       processors: [memory_limiter, batch]
-      exporters: [loadbalancing/trace, debug]
+      exporters: [otlphttp/cent-monitor, debug]
     traces/multi-exporters:
       receivers: [routing/traces]
       processors: [memory_limiter, batch]
-      exporters: [loadbalancing/trace, debug]
+      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor, debug]
     metrics:
       receivers: [otlp/ecs-otel]
-      processors: [memory_limiter, resource, batch]
+      processors: [memory_limiter, batch]
       exporters: [routing/metrics]
     metrics/self-metrics:
       receivers: [prometheus/ecs]
@@ -157,21 +151,5 @@ service:
       exporters: [otlphttp/cent-monitor, debug]
     metrics/multi-exporters:
       receivers: [routing/metrics]
-      processors: [memory_limiter, batch]
-      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor, debug]
-    logs:
-      receivers: [otlp/ecs-otel]
-      processors: [memory_limiter, resource, batch]
-      exporters: [routing/logs]
-    logs/tperd-monitor:
-      receivers: [routing/logs]
-      processors: [memory_limiter, batch]
-      exporters: [otlphttp/tperd-monitor, debug]
-    logs/cent-monitor:
-      receivers: [routing/logs]
-      processors: [memory_limiter, batch]
-      exporters: [otlphttp/cent-monitor, debug]
-    logs/multi-exporters:
-      receivers: [routing/logs]
       processors: [memory_limiter, batch]
       exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor, debug]
