@@ -74,6 +74,9 @@ connectors:
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
         pipelines: [traces/multi-exporters]
       - context: span
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "GLOBAL")
+        pipelines: [traces/multi-exporters]
+      - context: span
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "DEV")
         pipelines: [traces/multi-exporters]
       - context: span
@@ -90,6 +93,9 @@ connectors:
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
         pipelines: [metrics/multi-exporters]
       - context: metric
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "GLOBAL")
+        pipelines: [metrics/multi-exporters]
+      - context: metric
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "DEV")
         pipelines: [metrics/multi-exporters]
       - context: metric
@@ -104,6 +110,9 @@ connectors:
         pipelines: [logs/multi-exporters]
       - context: log
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
+        pipelines: [logs/multi-exporters]
+      - context: log
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "GLOBAL")
         pipelines: [logs/multi-exporters]
       - context: log
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "DEV")
