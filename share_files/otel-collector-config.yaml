@@ -13,8 +13,6 @@ receivers:
         static_configs:
           - targets:
               - ${env:HOSTNAME}:8888
-  prometheusremotewrite:
-    endpoint: 0.0.0.0:9090
 
 exporters:
   debug:
@@ -142,7 +140,7 @@ service:
       processors: [memory_limiter, batch]
       exporters: [loadbalancing/trace, debug]
     metrics:
-      receivers: [otlp/ecs-otel, prometheusremotewrite]
+      receivers: [otlp/ecs-otel]
       processors: [memory_limiter, resource, batch]
       exporters: [routing/metrics]
     metrics/self-metrics:
