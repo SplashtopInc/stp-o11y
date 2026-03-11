@@ -1,0 +1,181 @@
+# Version: v1-0
+# Description: Initial version
+# Compatible with: N/A
+
+receivers:
+  otlp/ecs-otel:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  prometheus/ecs:
+    config:
+      scrape_configs:
+      - job_name: opentelemetry-collector
+        scrape_interval: 10s
+        static_configs:
+          - targets:
+              - ${env:HOSTNAME}:8888
+
+exporters:
+  debug:
+    verbosity: ${env:otel_conf_debug_verbosity}
+  loadbalancing/trace:
+    protocol:
+      otlp:
+        timeout: 1s
+        tls:
+          insecure: true
+    resolver:
+      static:
+        hostnames:
+        - http://otel-collector-trace-0.otel-collector.local:4317
+        - http://otel-collector-trace-1.otel-collector.local:4317
+    routing_key: traceID
+  otlphttp/cent-monitor:
+    endpoint: "https://cent-otel.ops.splashtop.com:443"
+  otlphttp/tperd-monitor:
+    endpoint: "https://cent-otel-devops.ops.tperd.splashtop.eu:443"
+
+processors:
+  batch: {}
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  resource:
+    attributes:
+      - key: "splashtop.env"
+        value: ${env:splashtop_env}
+        action: "insert"
+      - key: "splashtop.stack"
+        value: ${env:splashtop_stack}
+        action: "insert"
+  # add attribute to data from self
+  resource/self-metrics:
+    attributes:
+      - key: "splashtop.datacenter"
+        value: ${env:ecs_cluster_name}
+        action: "insert"
+      - key: "splashtop.region"
+        value: ${env:ecs_region}
+        action: "insert"
+
+connectors:
+  # routing rules: 
+  # 1. DEV -> tperd-monitor & cent-monitor (for load testing)
+  # 2. PROD-OC & QA-EU -> both tperd-monitor & cent-monitor
+  # 3. OTHERS -> cent-monitor
+  routing/traces:
+    error_mode: ignore
+    match_once: true
+    table:
+      - context: span
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "PROD") and IsMatch(resource.attributes["splashtop.stack"], "OC")
+        pipelines: [traces/multi-exporters]
+      - context: span
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
+        pipelines: [traces/multi-exporters]
+      - context: span
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "DEV")
+        pipelines: [traces/multi-exporters]
+      - context: span
+        statement: route()
+        pipelines: [traces/cent-monitor]
+  routing/metrics:
+    error_mode: ignore
+    match_once: true
+    table:
+      - context: metric
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "PROD") and IsMatch(resource.attributes["splashtop.stack"], "OC")
+        pipelines: [metrics/multi-exporters]
+      - context: metric
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
+        pipelines: [metrics/multi-exporters]
+      - context: metric
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "DEV")
+        pipelines: [metrics/multi-exporters]
+      - context: metric
+        statement: route()
+        pipelines: [metrics/cent-monitor]
+  routing/logs:
+    error_mode: ignore
+    match_once: true
+    table:
+      - context: log
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "PROD") and IsMatch(resource.attributes["splashtop.stack"], "OC")
+        pipelines: [logs/multi-exporters]
+      - context: log
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
+        pipelines: [logs/multi-exporters]
+      - context: log
+        statement: route() where IsMatch(resource.attributes["splashtop.env"], "DEV")
+        pipelines: [logs/multi-exporters]
+      - context: log
+        statement: route()
+        pipelines: [logs/cent-monitor]
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  telemetry:
+    metrics:
+      address: ${env:HOSTNAME}:8888
+  extensions:
+    - health_check
+  pipelines:
+    traces:
+      receivers: [otlp/ecs-otel]
+      processors: [memory_limiter, resource, batch]
+      exporters: [routing/traces]
+    traces/tperd-monitor:
+      receivers: [routing/traces]
+      processors: [memory_limiter, batch]
+      exporters: [loadbalancing/trace, debug]
+    traces/cent-monitor:
+      receivers: [routing/traces]
+      processors: [memory_limiter, batch]
+      exporters: [loadbalancing/trace, debug]
+    traces/multi-exporters:
+      receivers: [routing/traces]
+      processors: [memory_limiter, batch]
+      exporters: [loadbalancing/trace, debug]
+    metrics:
+      receivers: [otlp/ecs-otel]
+      processors: [memory_limiter, resource, batch]
+      exporters: [routing/metrics]
+    metrics/self-metrics:
+      receivers: [prometheus/ecs]
+      processors: [memory_limiter, resource, resource/self-metrics, batch]
+      exporters: [routing/metrics]
+    metrics/tperd-monitor:
+      receivers: [routing/metrics]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/tperd-monitor, debug]
+    metrics/cent-monitor:
+      receivers: [routing/metrics]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/cent-monitor, debug]
+    metrics/multi-exporters:
+      receivers: [routing/metrics]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor, debug]
+    logs:
+      receivers: [otlp/ecs-otel]
+      processors: [memory_limiter, resource, batch]
+      exporters: [routing/logs]
+    logs/tperd-monitor:
+      receivers: [routing/logs]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/tperd-monitor, debug]
+    logs/cent-monitor:
+      receivers: [routing/logs]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/cent-monitor, debug]
+    logs/multi-exporters:
+      receivers: [routing/logs]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor, debug]
