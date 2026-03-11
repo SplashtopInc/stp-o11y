@@ -2,7 +2,8 @@
 # Description: 
 #   - Add prometheusremotewrite receiver for metrics
 #   - Remove `match_once: true` from routing pipelines (https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/routingconnector/README.md#match_once)
-# Compatible with: V1-0
+#   - fix format of telemetry metrics
+# Compatible with: v1-0
 
 receivers:
   otlp/ecs-otel:
@@ -125,7 +126,12 @@ extensions:
 service:
   telemetry:
     metrics:
-      address: ${env:HOSTNAME}:8888
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: ${env:HOSTNAME}
+                port: 8888
   extensions:
     - health_check
   pipelines:

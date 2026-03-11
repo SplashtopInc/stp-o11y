@@ -1,6 +1,7 @@
 # Version: v2-0
 # Description: 
 #   - Remove `match_once: true` from routing pipelines (https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/routingconnector/README.md#match_once)
+#   - fix format of telemetry metrics
 # Compatible with: v1-0
 
 receivers:
@@ -116,7 +117,12 @@ extensions:
 service:
   telemetry:
     metrics:
-      address: ${env:HOSTNAME}:8888
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: ${env:HOSTNAME}
+                port: 8888
   extensions:
     - health_check
   pipelines:
