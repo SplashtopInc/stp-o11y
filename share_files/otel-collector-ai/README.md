@@ -116,7 +116,7 @@ Both are VPC Endpoints inside `stp-vpc-pub-us-west-2`, sharing tenant
 | 4318  | OTLP/HTTP ingress — Cowork scope                           |
 | 4319  | OTLP/HTTP ingress — Claude Code scope                      |
 | 8888  | Collector self-metrics (`/metrics`, Prometheus format)     |
-| 13133 | `health_check` extension — ECS task health probe target    |
+| 13133 | `health_check` extension at `/health` — ECS task health probe target |
 
 ## Related references
 
