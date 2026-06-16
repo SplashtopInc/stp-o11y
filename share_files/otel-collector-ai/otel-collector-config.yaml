@@ -1,0 +1,147 @@
+# DT-3242 — AI OTel Collector configuration (ECS Fargate, stp-vpc-pub-us-west-2)
+#
+# Deployed by: stp-devops-k8s-observability/ai_otel_collector/
+# Container:   ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.154.0
+#
+# Auth model: bearer token, per-scope. The `tokens:` list lets the server accept
+# EITHER the current OR the previous slot value so rotations can flip the UI to
+# a new token without a tight cutover. Slots are rotated via
+# scripts/rotate-token.sh in the Terraform module.
+#
+# Per-scope routing (see knowledge-otel-collector-ai.md):
+#   - code   :4319 → Claude Code SDK: metrics + logs + traces
+#   - cowork :4318 → Cowork (claude.ai): logs only by design (no metrics, no traces)
+#
+# Traces: Tempo PrivateLink is out of DT-3242 scope. Code-line traces go to the
+# `debug` exporter so the data flow is observable until Phase 5 wires Tempo.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+  bearertokenauth/code:
+    scheme: Bearer
+    tokens:
+      - ${env:CODE_TOKEN_CURRENT}
+      - ${env:CODE_TOKEN_PREVIOUS}
+
+  bearertokenauth/cowork:
+    scheme: Bearer
+    tokens:
+      - ${env:COWORK_TOKEN_CURRENT}
+      - ${env:COWORK_TOKEN_PREVIOUS}
+
+receivers:
+  otlp/code:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4319
+        auth:
+          authenticator: bearertokenauth/code
+
+  otlp/cowork:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        auth:
+          authenticator: bearertokenauth/cowork
+
+  # Self-metrics (scrape collector's own /metrics endpoint)
+  prometheus/self:
+    config:
+      scrape_configs:
+        - job_name: ai-otel-collector
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['0.0.0.0:8888']
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+
+  batch: {}
+
+  # ECS task metadata → resource attributes (aws.ecs.tasks.ecs.cluster.arn, etc.)
+  resourcedetection/ecs:
+    detectors: [ecs]
+    timeout: 2s
+    override: false
+
+  # Splashtop env/stack tags applied to all upstream signals
+  resource:
+    attributes:
+      - key: splashtop.env
+        value: ${env:splashtop_env}
+        action: insert
+      - key: splashtop.stack
+        value: ${env:splashtop_stack}
+        action: insert
+
+  # Extra tags for self-metrics so they're distinguishable from upstream data
+  resource/self-metrics:
+    attributes:
+      - key: splashtop.datacenter
+        value: ${env:ecs_cluster_name}
+        action: insert
+      - key: splashtop.region
+        value: ${env:ecs_region}
+        action: insert
+
+exporters:
+  debug:
+    verbosity: ${env:otel_conf_debug_verbosity}
+
+  otlphttp/mimir:
+    endpoint: http://vpce-042606ecb2790cb67-4aoacwzl.vpce-svc-096f3d4dfb838e70c.us-west-2.vpce.amazonaws.com/otlp
+    compression: gzip
+    headers:
+      X-Scope-OrgID: "2"
+
+  otlphttp/loki:
+    endpoint: http://vpce-06062869502f5c746-orawao1f.vpce-svc-079376ab802676497.us-west-2.vpce.amazonaws.com/otlp
+    headers:
+      X-Scope-OrgID: "2"
+
+service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: '0.0.0.0'
+                port: 8888
+
+  extensions:
+    - health_check
+    - bearertokenauth/code
+    - bearertokenauth/cowork
+
+  pipelines:
+    # Claude Code SDK — full triad
+    metrics/code:
+      receivers: [otlp/code]
+      processors: [memory_limiter, resourcedetection/ecs, resource, batch]
+      exporters: [otlphttp/mimir]
+    logs/code:
+      receivers: [otlp/code]
+      processors: [memory_limiter, resourcedetection/ecs, resource, batch]
+      exporters: [otlphttp/loki]
+    traces/code:
+      receivers: [otlp/code]
+      processors: [memory_limiter, resourcedetection/ecs, resource, batch]
+      exporters: [debug]
+
+    # Cowork — logs only
+    logs/cowork:
+      receivers: [otlp/cowork]
+      processors: [memory_limiter, resourcedetection/ecs, resource, batch]
+      exporters: [otlphttp/loki]
+
+    # Self-metrics → Mimir with same org-id (separate processors to inject collector-specific tags)
+    metrics/self:
+      receivers: [prometheus/self]
+      processors: [memory_limiter, resourcedetection/ecs, resource, resource/self-metrics, batch]
+      exporters: [otlphttp/mimir]
