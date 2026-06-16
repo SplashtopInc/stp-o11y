@@ -37,6 +37,7 @@ receivers:
     protocols:
       http:
         endpoint: 0.0.0.0:4319
+        include_metadata: true
         auth:
           authenticator: bearertokenauth/code
 
@@ -44,6 +45,7 @@ receivers:
     protocols:
       http:
         endpoint: 0.0.0.0:4318
+        include_metadata: true
         auth:
           authenticator: bearertokenauth/cowork
 
@@ -90,6 +92,12 @@ processors:
         value: ${env:ecs_region}
         action: insert
 
+  attributes/inject_client_ip:
+    actions:
+      - key: client.address
+        from_context: X-Forwarded-For
+        action: insert
+
 exporters:
   debug:
     verbosity: ${env:otel_conf_debug_verbosity}
@@ -131,7 +139,7 @@ service:
       exporters: [otlp_http/mimir]
     logs/code:
       receivers: [otlp/code]
-      processors: [memory_limiter, resource_detection/ecs, resource, batch]
+      processors: [memory_limiter, resource_detection/ecs, resource, attributes/inject_client_ip, batch]
       exporters: [otlp_http/loki]
     traces/code:
       receivers: [otlp/code]
@@ -141,7 +149,7 @@ service:
     # Cowork — logs only
     logs/cowork:
       receivers: [otlp/cowork]
-      processors: [memory_limiter, resource_detection/ecs, resource, batch]
+      processors: [memory_limiter, resource_detection/ecs, resource, attributes/inject_client_ip, batch]
       exporters: [otlp_http/loki]
 
     # Self-metrics → Mimir with same org-id (separate processors to inject collector-specific tags)

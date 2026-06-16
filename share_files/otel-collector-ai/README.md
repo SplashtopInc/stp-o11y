@@ -99,6 +99,33 @@ Rotation is driven by `scripts/rotate-token.sh` in the Terraform module.
   metric (and any future OTLP-routed self-telemetry) reports this
   collector — not the default `otelcol-contrib` — as its source.
 
+## Client IP enrichment (logs only)
+
+Both log pipelines (`logs/code`, `logs/cowork`) run an
+`attributes/inject_client_ip` processor that copies the inbound
+`X-Forwarded-For` HTTP header into the `client.address` log-record
+attribute (OTel semantic convention name for the originating client).
+
+For this to work, both `otlp/*` receivers have `include_metadata: true`
+set — without that, the `from_context` action can't see HTTP headers.
+
+The processor uses `action: insert`, so if a client SDK ever sets
+`client.address` itself, that value wins.
+
+**Topology assumption — single proxy layer.** The path is
+`Claude Code SDK → ALB → this collector`. ALB writes the originating
+client IP into `X-Forwarded-For`, and because nothing in front of ALB
+adds to that header, it arrives as a single IP — no parsing needed.
+
+If a second proxy layer is ever inserted in front of ALB (CloudFront,
+WAF, another reverse proxy), the header becomes a comma-separated chain
+(`client, proxy1`) and `client.address` would receive the whole string.
+At that point, add a `transform` processor to extract the first segment.
+
+Not applied to `metrics/*` or `traces/*`: per-request client IP would
+explode metric cardinality and traces already carry it via SDK
+semantic conventions when present.
+
 ## Exporter endpoints
 
 Both are VPC Endpoints inside `stp-vpc-pub-us-west-2`, sharing tenant
