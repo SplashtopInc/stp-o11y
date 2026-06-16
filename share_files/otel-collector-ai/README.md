@@ -11,7 +11,7 @@ Mimir + Loki stack.
 
 > **Distribution & version notes**
 > - The `contrib` distro is required (not `k8s`/`core`): we use
->   `bearertokenauth`, `resourcedetection` (ECS detector), `otlphttp`, and
+>   `bearertokenauth`, `resource_detection` (ECS detector), `otlp_http`, and
 >   the Prometheus receiver — none of which are bundled in the slimmer
 >   distributions.
 > - Self-telemetry is configured with the **declarative `readers:` format**
@@ -89,10 +89,15 @@ Rotation is driven by `scripts/rotate-token.sh` in the Terraform module.
 
 - **All upstream signals** get `splashtop.env`, `splashtop.stack` plus the
   ECS-detected attributes (cluster ARN, task ARN, etc.) via
-  `resourcedetection/ecs`.
+  `resource_detection/ecs`.
 - **Self-metrics** additionally get `splashtop.datacenter`
   (= ECS cluster name) and `splashtop.region`, so dashboards can split the
   collector's own metrics from the customer payload.
+- The collector's own OTel identity is set via
+  `service.telemetry.resource` to `service.name=ai-otel-collector` /
+  `service.namespace=splashtop.observability`, so the `target_info`
+  metric (and any future OTLP-routed self-telemetry) reports this
+  collector — not the default `otelcol-contrib` — as its source.
 
 ## Exporter endpoints
 

@@ -64,7 +64,7 @@ processors:
   batch: {}
 
   # ECS task metadata → resource attributes (aws.ecs.tasks.ecs.cluster.arn, etc.)
-  resourcedetection/ecs:
+  resource_detection/ecs:
     detectors: [ecs]
     timeout: 2s
     override: false
@@ -93,19 +93,22 @@ exporters:
   debug:
     verbosity: ${env:otel_conf_debug_verbosity}
 
-  otlphttp/mimir:
+  otlp_http/mimir:
     endpoint: http://vpce-042606ecb2790cb67-4aoacwzl.vpce-svc-096f3d4dfb838e70c.us-west-2.vpce.amazonaws.com/otlp
     compression: gzip
     headers:
       X-Scope-OrgID: "2"
 
-  otlphttp/loki:
+  otlp_http/loki:
     endpoint: http://vpce-06062869502f5c746-orawao1f.vpce-svc-079376ab802676497.us-west-2.vpce.amazonaws.com/otlp
     headers:
       X-Scope-OrgID: "2"
 
 service:
   telemetry:
+    resource:
+      service.name: ai-otel-collector
+      service.namespace: splashtop.observability
     metrics:
       readers:
         - pull:
@@ -123,25 +126,25 @@ service:
     # Claude Code SDK — full triad
     metrics/code:
       receivers: [otlp/code]
-      processors: [memory_limiter, resourcedetection/ecs, resource, batch]
-      exporters: [otlphttp/mimir]
+      processors: [memory_limiter, resource_detection/ecs, resource, batch]
+      exporters: [otlp_http/mimir]
     logs/code:
       receivers: [otlp/code]
-      processors: [memory_limiter, resourcedetection/ecs, resource, batch]
-      exporters: [otlphttp/loki]
+      processors: [memory_limiter, resource_detection/ecs, resource, batch]
+      exporters: [otlp_http/loki]
     traces/code:
       receivers: [otlp/code]
-      processors: [memory_limiter, resourcedetection/ecs, resource, batch]
+      processors: [memory_limiter, resource_detection/ecs, resource, batch]
       exporters: [debug]
 
     # Cowork — logs only
     logs/cowork:
       receivers: [otlp/cowork]
-      processors: [memory_limiter, resourcedetection/ecs, resource, batch]
-      exporters: [otlphttp/loki]
+      processors: [memory_limiter, resource_detection/ecs, resource, batch]
+      exporters: [otlp_http/loki]
 
     # Self-metrics → Mimir with same org-id (separate processors to inject collector-specific tags)
     metrics/self:
       receivers: [prometheus/self]
-      processors: [memory_limiter, resourcedetection/ecs, resource, resource/self-metrics, batch]
-      exporters: [otlphttp/mimir]
+      processors: [memory_limiter, resource_detection/ecs, resource, resource/self-metrics, batch]
+      exporters: [otlp_http/mimir]
