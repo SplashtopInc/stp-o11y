@@ -31,8 +31,16 @@ exporters:
     routing_key: traceID
   otlphttp/cent-monitor:
     endpoint: "https://cent-otel.ops.splashtop.com:443"
+    sending_queue:
+      queue_size: ${env:otel_cent_queue_size:-200}
+    retry_on_failure:
+      max_elapsed_time: ${env:otel_cent_retry_max:-300}s
   otlphttp/tperd-monitor:
     endpoint: "https://cent-otel-devops.ops.tperd.splashtop.eu:443"
+    sending_queue:
+      queue_size: ${env:otel_tperd_queue_size:-200}
+    retry_on_failure:
+      max_elapsed_time: ${env:otel_tperd_retry_max:-300}s
 
 processors:
   batch: {}
