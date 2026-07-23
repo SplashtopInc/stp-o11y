@@ -1,0 +1,102 @@
+receivers:
+  otlp/ecs-adot:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  awsecscontainermetrics:
+    collection_interval: 30s
+  filelog:
+    include: [ /mnt/logs/*.json, /mnt/logs/*.log ]
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%d %H:%M:%S %z'
+        severity:
+          parse_from: attributes.severity
+  prometheus/ecs:
+    config:
+      scrape_configs:
+      - job_name: adot-collector
+        scrape_interval: 10s
+        static_configs:
+          - targets:
+              - ${env:HOSTNAME}:8888
+
+exporters:
+  debug:
+    verbosity: ${env:otel_conf_debug_verbosity:-basic}
+  otlphttp/ecs-otel:
+    endpoint: ${env:otlp_exporter_endpoint}
+
+processors:
+  batch: {}
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  resource:
+    attributes:
+      - key: "splashtop.datacenter"
+        value: ${env:ecs_cluster_name:-default-cluster}
+        action: "insert"
+      - key: "splashtop.region"
+        value: ${env:ecs_region:-default-region}
+        action: "insert"
+  resource/log:
+    attributes:
+      - key: "service.name"
+        value: ${env:ecs_service_name:-default-service}
+        action: "insert"
+  # Derive identity from the ECS metadata that awsecscontainermetrics already
+  # attaches, so task metrics split per service (and per task) instead of
+  # collapsing into one per-cluster series. insert keeps any value the source
+  # already carries. Only wired into the ECS container metrics pipeline — that
+  # is the only pipeline whose data has aws.ecs.* attributes.
+  resource/set_service_name:
+    attributes:
+      - key: "service.name"
+        from_attribute: "aws.ecs.service.name"
+        action: "insert"
+      - key: "service.instance.id"
+        from_attribute: "aws.ecs.task.arn"
+        action: "insert"
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  telemetry:
+    metrics:
+      level: normal
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: ${env:HOSTNAME}
+                port: 8888
+  extensions: [health_check]
+  pipelines:
+    metrics/awsecscontainer:
+      receivers: [awsecscontainermetrics, prometheus/ecs]
+      processors: [memory_limiter, resource, resource/set_service_name, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    metrics:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    traces:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    logs:
+      receivers: [otlp/ecs-adot]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/ecs-otel, debug]
+    logs/filelog:
+      receivers: [filelog]
+      processors: [memory_limiter, resource, resource/log, batch]
+      exporters: [otlphttp/ecs-otel, debug]
