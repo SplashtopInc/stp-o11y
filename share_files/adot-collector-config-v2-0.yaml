@@ -51,7 +51,7 @@ processors:
         value: ${env:ecs_service_name:-default-service}
         action: "insert"
   # Derive identity from the ECS metadata that awsecscontainermetrics already
-  # attaches, so task metrics split per service (and per task) instead of
+  # attaches, so metrics split per service (and per container/task) instead of
   # collapsing into one per-cluster series. insert keeps any value the source
   # already carries. Only wired into the ECS container metrics pipeline — that
   # is the only pipeline whose data has aws.ecs.* attributes.
@@ -59,6 +59,12 @@ processors:
     attributes:
       - key: "service.name"
         from_attribute: "aws.ecs.service.name"
+        action: "insert"
+      # Container-level metrics carry container.id (unique per container) — use
+      # it first. Task-level metrics lack it, so the next insert falls back to
+      # task.arn. insert never overwrites, so each level keeps its own value.
+      - key: "service.instance.id"
+        from_attribute: "container.id"
         action: "insert"
       - key: "service.instance.id"
         from_attribute: "aws.ecs.task.arn"
