@@ -15,8 +15,12 @@ receivers:
               - ${env:HOSTNAME}:8888
 
 exporters:
-  debug:
-    verbosity: ${env:otel_conf_debug_verbosity}
+  # debug exporter disabled: it emits one summary line per batch flush per
+  # pipeline to stdout, which awslogs ships to CloudWatch Logs — pure ingestion
+  # cost for data already exported to cent/tperd monitors and read by nobody.
+  # Re-enable by uncommenting and adding `debug` back to the pipeline exporters.
+  # debug:
+  #   verbosity: ${env:otel_conf_debug_verbosity}
   loadbalancing/trace:
     protocol:
       otlp:
@@ -138,15 +142,15 @@ service:
     traces/tperd-monitor:
       receivers: [routing/traces]
       processors: [memory_limiter, batch]
-      exporters: [loadbalancing/trace, debug]
+      exporters: [loadbalancing/trace]
     traces/cent-monitor:
       receivers: [routing/traces]
       processors: [memory_limiter, batch]
-      exporters: [loadbalancing/trace, debug]
+      exporters: [loadbalancing/trace]
     traces/multi-exporters:
       receivers: [routing/traces]
       processors: [memory_limiter, batch]
-      exporters: [loadbalancing/trace, debug]
+      exporters: [loadbalancing/trace]
     metrics:
       receivers: [otlp/ecs-otel]
       processors: [memory_limiter, resource, batch]
@@ -158,15 +162,15 @@ service:
     metrics/tperd-monitor:
       receivers: [routing/metrics]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/tperd-monitor, debug]
+      exporters: [otlphttp/tperd-monitor]
     metrics/cent-monitor:
       receivers: [routing/metrics]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/cent-monitor, debug]
+      exporters: [otlphttp/cent-monitor]
     metrics/multi-exporters:
       receivers: [routing/metrics]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor, debug]
+      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor]
     logs:
       receivers: [otlp/ecs-otel]
       processors: [memory_limiter, resource, batch]
@@ -174,12 +178,12 @@ service:
     logs/tperd-monitor:
       receivers: [routing/logs]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/tperd-monitor, debug]
+      exporters: [otlphttp/tperd-monitor]
     logs/cent-monitor:
       receivers: [routing/logs]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/cent-monitor, debug]
+      exporters: [otlphttp/cent-monitor]
     logs/multi-exporters:
       receivers: [routing/logs]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor, debug]
+      exporters: [otlphttp/cent-monitor, otlphttp/tperd-monitor]
