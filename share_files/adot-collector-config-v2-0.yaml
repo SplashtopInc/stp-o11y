@@ -26,8 +26,6 @@ receivers:
               - ${env:HOSTNAME}:8888
 
 exporters:
-  debug:
-    verbosity: ${env:otel_conf_debug_verbosity:-basic}
   otlphttp/ecs-otel:
     endpoint: ${env:otlp_exporter_endpoint}
 
@@ -89,20 +87,20 @@ service:
     metrics/awsecscontainer:
       receivers: [awsecscontainermetrics, prometheus/ecs]
       processors: [memory_limiter, resource, resource/set_service_name, batch]
-      exporters: [otlphttp/ecs-otel, debug]
+      exporters: [otlphttp/ecs-otel]
     metrics:
       receivers: [otlp/ecs-adot]
       processors: [memory_limiter, resource, batch]
-      exporters: [otlphttp/ecs-otel, debug]
+      exporters: [otlphttp/ecs-otel]
     traces:
       receivers: [otlp/ecs-adot]
       processors: [memory_limiter, resource, batch]
-      exporters: [otlphttp/ecs-otel, debug]
+      exporters: [otlphttp/ecs-otel]
     logs:
       receivers: [otlp/ecs-adot]
       processors: [memory_limiter, resource, batch]
-      exporters: [otlphttp/ecs-otel, debug]
+      exporters: [otlphttp/ecs-otel]
     logs/filelog:
       receivers: [filelog]
       processors: [memory_limiter, resource, resource/log, batch]
-      exporters: [otlphttp/ecs-otel, debug]
+      exporters: [otlphttp/ecs-otel]
