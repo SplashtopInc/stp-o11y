@@ -67,17 +67,19 @@ processors:
         action: "insert"
 
 connectors:
-  # routing rules: 
+  # routing rules:
   # 1. DEV -> tperd-monitor & cent-monitor (for load testing)
-  # 2. PROD-OC & QA-EU -> both tperd-monitor & cent-monitor
-  # 3. OTHERS -> cent-monitor
+  # 2. QA-EU -> both tperd-monitor & cent-monitor
+  # 3. OTHERS (incl. PROD-OC) -> cent-monitor
+  # DT-3358: PROD-OC removed from tperd dual-write; TPE test stack could not
+  # keep up with real PROD volume, causing chronic 100% queue saturation.
   routing/traces:
     error_mode: ignore
     match_once: true
     table:
       - context: span
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "PROD") and IsMatch(resource.attributes["splashtop.stack"], "OC")
-        pipelines: [traces/multi-exporters]
+        pipelines: [traces/cent-monitor]
       - context: span
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
         pipelines: [traces/multi-exporters]
@@ -93,7 +95,7 @@ connectors:
     table:
       - context: metric
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "PROD") and IsMatch(resource.attributes["splashtop.stack"], "OC")
-        pipelines: [metrics/multi-exporters]
+        pipelines: [metrics/cent-monitor]
       - context: metric
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
         pipelines: [metrics/multi-exporters]
@@ -109,7 +111,7 @@ connectors:
     table:
       - context: log
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "PROD") and IsMatch(resource.attributes["splashtop.stack"], "OC")
-        pipelines: [logs/multi-exporters]
+        pipelines: [logs/cent-monitor]
       - context: log
         statement: route() where IsMatch(resource.attributes["splashtop.env"], "QA") and IsMatch(resource.attributes["splashtop.stack"], "EU")
         pipelines: [logs/multi-exporters]
