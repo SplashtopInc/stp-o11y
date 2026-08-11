@@ -7,9 +7,40 @@ receivers:
         static_configs:
           - targets: ["${env:scrape_job_target:-127.0.0.1:8080}"]
 
+processors:
+  # The scrape target above is loopback, so it is byte-identical in every task of
+  # a service. The prometheus receiver derives service.instance.id from that
+  # address, which gave every task the same series identity: one task's samples
+  # won and the rest were dropped as duplicates, and a task replacement looked
+  # like a counter reset on the surviving series. Detect the task from the ECS
+  # Task Metadata Endpoint so identity can come from ECS instead of the address.
+  # TMDE is not a new dependency here — awsecscontainermetrics in the base config
+  # already queries it.
+  resourcedetection/ecs:
+    detectors: [ecs]
+    timeout: 5s
+    override: false
+
+  # upsert, not insert: the prometheus receiver has already filled
+  # service.instance.id with the loopback address, so insert would be a no-op
+  # (this is also why the base config's resource/set_service_name cannot be
+  # reused here — that one inserts, and its aws.ecs.* sources are absent from
+  # scraped data anyway).
+  #
+  # aws.ecs.task.arn rather than aws.ecs.task.id: task.arn is a documented
+  # attribute of the ecs detector, while task.id is not present in every
+  # collector version. Task ARN is also what the task-level ECS metrics already
+  # use as their instance, so application metrics stay joinable against
+  # ecs_task_* for the same task.
+  resource/custom_job_instance:
+    attributes:
+      - key: "service.instance.id"
+        from_attribute: "aws.ecs.task.arn"
+        action: "upsert"
+
 service:
   pipelines:
     metrics/custom-job:
       receivers: [prometheus/custom-job]
-      processors: [memory_limiter, resource, batch]
+      processors: [memory_limiter, resource, resourcedetection/ecs, resource/custom_job_instance, batch]
       exporters: [otlphttp/ecs-otel]
