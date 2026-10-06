@@ -132,7 +132,9 @@ service:
     # service.name, which becomes the job label in Mimir. Pin it to the
     # scrape job_name so the job label stays opentelemetry-collector-proxy-trace.
     resource:
-      service.name: opentelemetry-collector-proxy-trace
+      attributes:
+        - name: service.name
+          value: opentelemetry-collector-proxy-trace
     metrics:
       readers:
         - pull:
