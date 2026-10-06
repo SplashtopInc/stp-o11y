@@ -24,7 +24,7 @@ receivers:
 exporters:
   debug:
     verbosity: ${env:otel_conf_debug_verbosity}
-  loadbalancing/trace:
+  load_balancing/trace:
     protocol:
       otlp:
         timeout: 1s
@@ -32,9 +32,13 @@ exporters:
           insecure: true
     resolver:
       static:
+        # passthrough:/// hands the name to Go's dialer, which falls back to IPv4
+        # silently. With gRPC's default dns resolver, the IPv6 address Service Connect
+        # lists for these names is dialled too and fails with "network is unreachable"
+        # (IPv4-only tasks), logging a warn on every reconnect.
         hostnames:
-        - http://otel-collector-trace-0.otel-collector.local:4317
-        - http://otel-collector-trace-1.otel-collector.local:4317
+        - passthrough:///otel-collector-trace-0.otel-collector.local:4317
+        - passthrough:///otel-collector-trace-1.otel-collector.local:4317
     routing_key: traceID
   otlp_http/cent-monitor:
     endpoint: "https://cent-otel.ops.splashtop.com:443"
@@ -137,7 +141,9 @@ service:
     # service.name, which becomes the job label in Mimir. Pin it to the
     # scrape job_name so the job label stays opentelemetry-collector-proxy.
     resource:
-      service.name: opentelemetry-collector-proxy
+      attributes:
+        - name: service.name
+          value: opentelemetry-collector-proxy
     metrics:
       readers:
         - pull:
@@ -155,15 +161,15 @@ service:
     traces/tperd-monitor:
       receivers: [routing/traces]
       processors: [memory_limiter, batch]
-      exporters: [loadbalancing/trace, debug]
+      exporters: [load_balancing/trace, debug]
     traces/cent-monitor:
       receivers: [routing/traces]
       processors: [memory_limiter, batch]
-      exporters: [loadbalancing/trace, debug]
+      exporters: [load_balancing/trace, debug]
     traces/multi-exporters:
       receivers: [routing/traces]
       processors: [memory_limiter, batch]
-      exporters: [loadbalancing/trace, debug]
+      exporters: [load_balancing/trace, debug]
     metrics:
       receivers: [otlp/ecs-otel]
       processors: [memory_limiter, resource, batch]
