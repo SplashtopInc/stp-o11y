@@ -8,7 +8,7 @@ Mimir + Loki stack.
 - **Deployed by:** `stp-devops-k8s-observability/stacks/ai-otel/ocstack/usw2/` (Terraform)
 - **Runtime:** ECS Fargate, VPC `stp-vpc-pub-us-west-2`
 - **Config / image pairs** (the leaf's tfvars switch both in one apply; DT-3549):
-  - `share_files/otel-collector/otel-collector-ai-config-0.161-r1.yaml` ↔ `opentelemetry-collector-contrib:0.161.x`
+  - `share_files/otel-collector-ai/otel-collector-config-0.161-r1.yaml` ↔ `opentelemetry-collector-contrib:0.161.x`
   - `share_files/otel-collector-ai/otel-collector-config-v1-0.yaml` ↔ `0.154.0` (frozen; delete once nothing points at it)
 - **Config file rule:** published files are immutable. A config change gets a new `-rN` file; a new collector minor starts at `-<minor>-r1`.
 
