@@ -5,9 +5,12 @@ OpenTelemetry Collector that ingests telemetry from Splashtop's AI tooling
 Mimir + Loki stack.
 
 - **Jira:** DT-3242
-- **Deployed by:** `stp-devops-k8s-observability/ai_otel_collector/` (Terraform)
+- **Deployed by:** `stp-devops-k8s-observability/stacks/ai-otel/ocstack/usw2/` (Terraform)
 - **Runtime:** ECS Fargate, VPC `stp-vpc-pub-us-west-2`
-- **Image:** `ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.154.0`
+- **Config / image pairs** (the leaf's tfvars switch both in one apply; DT-3549):
+  - `share_files/otel-collector/otel-collector-ai-config-0.161-r1.yaml` ↔ `opentelemetry-collector-contrib:0.161.x`
+  - `share_files/otel-collector-ai/otel-collector-config-v1-0.yaml` ↔ `0.154.0` (frozen; delete once nothing points at it)
+- **Config file rule:** published files are immutable. A config change gets a new `-rN` file; a new collector minor starts at `-<minor>-r1`.
 
 > **Distribution & version notes**
 > - The `contrib` distro is required (not `k8s`/`core`): we use
@@ -69,7 +72,7 @@ This lets us rotate the UI-facing token without a tight cutover:
 4. Once all clients are confirmed migrated, clear `PREVIOUS` on the next
    rotation.
 
-Rotation is driven by `scripts/rotate-token.sh` in the Terraform module.
+Rotation is driven by `stacks/ai-otel/_base/scripts/rotate-token.sh` in the Terraform repo.
 
 ## Required environment variables
 
@@ -94,7 +97,7 @@ Rotation is driven by `scripts/rotate-token.sh` in the Terraform module.
   (= ECS cluster name) and `splashtop.region`, so dashboards can split the
   collector's own metrics from the customer payload.
 - The collector's own OTel identity is set via
-  `service.telemetry.resource` to `service.name=ai-otel-collector` /
+  `service.telemetry.resource.attributes` to `service.name=ai-otel-collector` /
   `service.namespace=splashtop.observability`, so the `target_info`
   metric (and any future OTLP-routed self-telemetry) reports this
   collector — not the default `otelcol-contrib` — as its source.
@@ -148,5 +151,5 @@ Both are VPC Endpoints inside `stp-vpc-pub-us-west-2`, sharing tenant
 ## Related references
 
 - Knowledge note: `Wei/knowledge/knowledge-otel-collector-ai.md`
-- Terraform module: `stp-devops-k8s-observability/ai_otel_collector/`
+- Terraform stack: `stp-devops-k8s-observability/stacks/ai-otel/` (leaf `ocstack/usw2`)
 - Cent Monitor environment: `aws-sso-ocstack` (apse2 / cs6yvm)
