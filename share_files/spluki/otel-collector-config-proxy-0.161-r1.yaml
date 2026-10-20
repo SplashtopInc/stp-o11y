@@ -6,7 +6,7 @@
 # VPC endpoint service). Spluki's EC2 host collector and ECS task sidecars reach
 # it over PrivateLink with OTLP/HTTP on 4318.
 #
-# Differs from otel-collector-config-0.161-r1.yaml:
+# Differs from the shared proxy config (share_files/otel-collector/otel-collector-config-0.161-r1.yaml):
 # - metrics and logs only: Spluki sends no traces and this leaf runs no trace
 #   service, so there is no traces pipeline / load_balancing exporter
 # - no routing connectors: Spluki is DEV, so everything goes to both cent-monitor
