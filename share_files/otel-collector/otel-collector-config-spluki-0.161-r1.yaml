@@ -1,0 +1,108 @@
+# DT-3571 — ECS OTel collector proxy configuration for Spluki
+#
+# Paired with: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.161.x
+#
+# Used by the tperd/usw2 ecs-otel leaf (admin VPC, fronted by an internal NLB +
+# VPC endpoint service). Spluki's EC2 host collector and ECS task sidecars reach
+# it over PrivateLink with OTLP/HTTP on 4318.
+#
+# Differs from otel-collector-config-0.161-r1.yaml:
+# - metrics and logs only: Spluki sends no traces and this leaf runs no trace
+#   service, so there is no traces pipeline / load_balancing exporter
+# - no routing connectors: Spluki is DEV, so everything goes to both cent-monitor
+#   and tperd-monitor (same as the DEV route of the shared proxy config)
+# - OTLP/HTTP receiver only (the NLB forwards 4318 only)
+#
+# Published files are immutable: tasks fetch this URL on every start, so editing it
+# in place hits every task that points here. Changes go to a new -rN file; a new
+# collector minor starts a new -<minor>-r1 file.
+receivers:
+  otlp/ecs-otel:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+  prometheus/ecs:
+    config:
+      scrape_configs:
+      - job_name: opentelemetry-collector-proxy
+        scrape_interval: 10s
+        static_configs:
+          - targets:
+              - ${env:HOSTNAME}:8888
+
+exporters:
+  debug:
+    verbosity: ${env:otel_conf_debug_verbosity}
+  otlp_http/cent-monitor:
+    endpoint: "https://cent-otel.ops.splashtop.com:443"
+    sending_queue:
+      queue_size: ${env:otel_conf_cent_queue_size:-200}
+    retry_on_failure:
+      max_elapsed_time: ${env:otel_conf_cent_retry_max:-300}s
+  otlp_http/tperd-monitor:
+    endpoint: "https://cent-otel-devops.ops.tperd.splashtop.eu:443"
+    sending_queue:
+      queue_size: ${env:otel_conf_tperd_queue_size:-200}
+    retry_on_failure:
+      max_elapsed_time: ${env:otel_conf_tperd_retry_max:-300}s
+
+processors:
+  batch: {}
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  resource:
+    attributes:
+      - key: "splashtop.env"
+        value: ${env:splashtop_env}
+        action: "insert"
+      - key: "splashtop.stack"
+        value: ${env:splashtop_stack}
+        action: "insert"
+  # add attribute to data from self
+  resource/self-metrics:
+    attributes:
+      - key: "splashtop.datacenter"
+        value: ${env:ecs_cluster_name}
+        action: "insert"
+      - key: "splashtop.region"
+        value: ${env:ecs_region}
+        action: "insert"
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  telemetry:
+    # otelcol >= 0.149 only puts service.name on target_info, defaulting to
+    # "otelcol-contrib"; the self-scrape (prometheus/ecs) then takes it as
+    # service.name, which becomes the job label in Mimir. Pin it to the
+    # scrape job_name so the job label stays opentelemetry-collector-proxy.
+    resource:
+      attributes:
+        - name: service.name
+          value: opentelemetry-collector-proxy
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: ${env:HOSTNAME}
+                port: 8888
+  extensions:
+    - health_check
+  pipelines:
+    metrics:
+      receivers: [otlp/ecs-otel]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp_http/cent-monitor, otlp_http/tperd-monitor, debug]
+    metrics/self-metrics:
+      receivers: [prometheus/ecs]
+      processors: [memory_limiter, resource, resource/self-metrics, batch]
+      exporters: [otlp_http/cent-monitor, otlp_http/tperd-monitor, debug]
+    logs:
+      receivers: [otlp/ecs-otel]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp_http/cent-monitor, otlp_http/tperd-monitor, debug]
