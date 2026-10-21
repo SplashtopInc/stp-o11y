@@ -20,7 +20,7 @@ Cent.
 
 ```
 [Spluki EC2 host]  otelcol-contrib (RPM, systemd)    [Spluki app task]  app + otelcol-contrib sidecar
-  host_metrics + file_log + journald                   awsecscontainermetrics
+  host_metrics + file_log (app log)                    awsecscontainermetrics
         | OTLP/HTTP 4318                                       | OTLP/HTTP 4318
         v                                                      v
   interface endpoint (stp-vpc-spluki-usw2)          interface endpoint (spluki-m6-dev-vpc)
@@ -48,10 +48,15 @@ only admits `10.100.210.0/24` (stp-vpc-spluki-usw2) and `10.200.0.0/16`
 
 | File | Runs on | What it sends |
 |------|---------|---------------|
-| `otel-collector-config-ec2-0.161-r1.yaml` | control-plane EC2 (otelcol-contrib 0.161.x linux arm64 RPM) | host metrics; `storage/logs/spluki.log*` parsed into severity / `logger` / `request_id` + message; `spluki.service` journal lines (uvicorn, access log, crashes) minus the app-log copies |
+| `otel-collector-config-ec2-0.161-r1.yaml` | control-plane EC2 (otelcol-contrib 0.161.x linux arm64 RPM) | host metrics; `storage/logs/spluki.log*` as-is (one record per log record, a traceback kept with its record) |
 | `otel-collector-config-ecs-sidecar-0.161-r1.yaml` | sidecar in each app task (`opentelemetry-collector-contrib:0.161.x`, arm64) | ECS task / container CPU, memory, network, storage from the task metadata endpoint; `service.name` = task family |
 
 No traces from either. Neither opens a receiving port.
+
+The app log is shipped unparsed: each line is `<time> level=… logger=… request_id=… <message key=value …>`,
+so fields are extracted at query time (LogQL `| logfmt`, or a regexp for the
+timestamp). The `spluki.service` journal is not collected — it mostly repeats the
+app log (the unit copies every record to stderr), plus uvicorn's access log.
 
 ## Environment
 
@@ -72,7 +77,7 @@ No traces from either. Neither opens a receiving port.
 3. systemd drop-in (`systemctl edit otelcol-contrib`):
    ```ini
    [Service]
-   # reads /home/ec2-user (0700) and the system journal
+   # reads the app log under /home/ec2-user (0700)
    User=root
    Group=root
    # the host has 3.8 GB and spluki.service may take 3G
@@ -82,9 +87,9 @@ No traces from either. Neither opens a receiving port.
    ```
 4. `systemctl daemon-reload && systemctl enable --now otelcol-contrib`.
 
-The collector keeps its read positions in `/var/lib/otelcol-contrib/file_storage`,
+The collector keeps its read position in `/var/lib/otelcol-contrib/file_storage`,
 so a restart neither re-sends nor skips log lines. It starts at the end of the
-existing log and journal (no backfill).
+existing log (no backfill).
 
 ## ECS sidecar (task definition sketch)
 
@@ -132,5 +137,6 @@ proxy does. Ship the file with the task instead, either way:
 - Metrics land in Mimir-DEV with `splashtop_env="DEV"`, `splashtop_stack="SPLUKI"`.
   Host metrics carry `host.name` / EC2 attributes and `service.name="spluki"`;
   task metrics carry the `aws.ecs.*` attributes and `service.name=<task family>`.
-- Logs land in Loki-DEV. App-log records have severity, `logger`, `request_id` and
-  `log.file.name`; journal records have `systemd.unit`.
+- Logs land in Loki-DEV as the raw app-log lines, with `log.file.name`, the host
+  attributes and `service.name="spluki"`; parse `level` / `logger` / `request_id`
+  at query time.

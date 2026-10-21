@@ -1,23 +1,23 @@
 # DT-3571 — OTel collector on the Spluki control-plane EC2 host
 #
 # Paired with: otelcol-contrib 0.161.x (linux arm64 RPM, systemd) on Amazon Linux 2023.
-# Sends host metrics + the Spluki app log + spluki.service journal lines over
-# PrivateLink (interface endpoint in stp-vpc-spluki-usw2) to the Spluki ECS OTel
-# proxy, which adds splashtop.env=DEV / splashtop.stack=SPLUKI and forwards to Cent.
+# Sends host metrics + the Spluki app log over PrivateLink (interface endpoint in
+# stp-vpc-spluki-usw2) to the Spluki ECS OTel proxy, which adds
+# splashtop.env=DEV / splashtop.stack=SPLUKI and forwards to Cent.
 #
 # Required environment (see README.md):
 #   SPLUKI_OTEL_ENDPOINT  http://<interface endpoint DNS>:4318 (plain HTTP — the
 #                         proxy NLB listens on TCP 4318, PrivateLink keeps it private)
 #   GOMEMLIMIT            soft Go heap limit, below the systemd MemoryMax
-# Must run as root: it reads /home/ec2-user (mode 0700) and the system journal.
+# Must run as root: it reads the app log under /home/ec2-user (mode 0700).
 #
 # Published files are immutable: hosts fetch this URL on every start, so editing it
 # in place hits every host that points here. Changes go to a new -rN file; a new
 # collector minor starts a new -<minor>-r1 file.
 
 extensions:
-  # Keeps the file_log / journald read positions across collector restarts, so a
-  # restart neither re-sends nor skips lines.
+  # Keeps the app-log read position across collector restarts, so a restart
+  # neither re-sends nor skips lines.
   file_storage:
     directory: /var/lib/otelcol-contrib/file_storage
     create_directory: true
@@ -41,7 +41,12 @@ receivers:
   # The app's own log: spluki.logging_config writes it through a RotatingFileHandler
   # (1 MB x 30) under the unit's WorkingDirectory, one line per record:
   #   <asctime> level=<LEVEL> logger=<name> request_id=<id> <message with key=value tokens>
-  # A traceback continues on the following lines, so a record starts at a timestamp.
+  # Lines are shipped as-is (fields are parsed at query time, e.g. LogQL `| logfmt`).
+  # The only processing is joining a traceback's lines to the record they belong to:
+  # a record starts at a timestamp.
+  #
+  # The spluki.service journal is NOT collected: it mostly repeats the app log
+  # (the unit copies every record to stderr), plus uvicorn's access log.
   file_log/spluki:
     include:
       - /home/ec2-user/work/Spluki/web-service/backend/storage/logs/spluki.log*
@@ -49,33 +54,6 @@ receivers:
     storage: file_storage
     multiline:
       line_start_pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} '
-    operators:
-      - type: regex_parser
-        regex: '^(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) level=(?P<level>\S+) logger=(?P<logger>\S+) request_id=(?P<request_id>\S+) (?P<msg>(?s:.*))$'
-        timestamp:
-          parse_from: attributes.time
-          layout_type: gotime
-          layout: '2006-01-02 15:04:05,000'
-        severity:
-          parse_from: attributes.level
-      - type: move
-        from: attributes.msg
-        to: body
-      - type: remove
-        field: attributes.time
-      # already carried as the record's severity
-      - type: remove
-        field: attributes.level
-
-  # spluki.service on the journal: uvicorn's own lines, its access log (one line
-  # per response, query string already cut), and startup / crash output. The unit
-  # ALSO copies every app log record to stderr — those duplicates of the file above
-  # are dropped in filter/journald-app-copy.
-  journald/spluki:
-    units: [spluki.service]
-    priority: info
-    start_at: end
-    storage: file_storage
 
 processors:
   memory_limiter:
@@ -92,20 +70,6 @@ processors:
       - key: service.name
         value: spluki
         action: insert
-  filter/journald-app-copy:
-    error_mode: ignore
-    logs:
-      log_record:
-        - 'IsMatch(body["MESSAGE"], " level=[A-Z]+ logger=\\S+ request_id=")'
-  # The journald receiver emits the whole journal entry as a map; keep the text as
-  # the body and the unit as an attribute.
-  transform/journald:
-    error_mode: ignore
-    log_statements:
-      - context: log
-        statements:
-          - set(attributes["systemd.unit"], body["_SYSTEMD_UNIT"])
-          - set(body, body["MESSAGE"])
 
 exporters:
   otlp_http/spluki-proxy:
@@ -128,11 +92,7 @@ service:
       receivers: [host_metrics]
       processors: [memory_limiter, resource_detection, resource, batch]
       exporters: [otlp_http/spluki-proxy]
-    logs/file:
+    logs:
       receivers: [file_log/spluki]
       processors: [memory_limiter, resource_detection, resource, batch]
-      exporters: [otlp_http/spluki-proxy]
-    logs/journald:
-      receivers: [journald/spluki]
-      processors: [memory_limiter, filter/journald-app-copy, transform/journald, resource_detection, resource, batch]
       exporters: [otlp_http/spluki-proxy]
