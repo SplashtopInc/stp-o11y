@@ -1,0 +1,64 @@
+# DT-3571 — OTel collector sidecar for Spluki app tasks (ECS Fargate, ARM64)
+#
+# Paired with: otelcol-contrib 0.161.x image (multi-arch, mirrored into the
+# spluki-m6-dev/ ECR namespace). One sidecar per app task; it reads the task's own
+# ECS Task Metadata endpoint (CPU / memory / network / storage per task and per
+# container) and sends it over PrivateLink (interface endpoint in spluki-m6-dev-vpc)
+# to the Spluki ECS OTel proxy, which adds splashtop.env=DEV /
+# splashtop.stack=SPLUKI and forwards to Cent.
+#
+# The sidecar opens no ports: there is no OTLP receiver, so the app cannot (and
+# need not) send it anything.
+#
+# Required environment (see README.md):
+#   SPLUKI_OTEL_ENDPOINT  http://<interface endpoint DNS>:4318
+#   GOMEMLIMIT            soft Go heap limit, below the container memory
+# ECS_CONTAINER_METADATA_URI_V4 is injected by Fargate itself.
+#
+# App tasks have no direct internet egress, so this file ships with the task (baked
+# into the mirrored image, or passed via --config=env:...) rather than being fetched
+# from GitHub Pages at startup — see README.md.
+#
+# Published files are immutable: changes go to a new -rN file; a new collector minor
+# starts a new -<minor>-r1 file.
+
+receivers:
+  awsecscontainermetrics:
+    collection_interval: 30s
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  batch: {}
+  # The receiver tags every metric with aws.ecs.* (cluster, task ARN, family,
+  # revision, container name). Name the service after the task family so each
+  # Spluki app shows up as its own service.
+  transform/service-name:
+    error_mode: ignore
+    metric_statements:
+      - context: resource
+        statements:
+          - set(attributes["service.name"], attributes["aws.ecs.task.family"]) where attributes["service.name"] == nil and attributes["aws.ecs.task.family"] != nil
+
+exporters:
+  otlp_http/spluki-proxy:
+    endpoint: ${env:SPLUKI_OTEL_ENDPOINT}
+    sending_queue:
+      queue_size: 100
+    retry_on_failure:
+      max_elapsed_time: 300s
+
+service:
+  telemetry:
+    # Keep the sidecar quiet in CloudWatch: only problems.
+    logs:
+      level: warn
+    metrics:
+      level: none
+  pipelines:
+    metrics:
+      receivers: [awsecscontainermetrics]
+      processors: [memory_limiter, transform/service-name, batch]
+      exporters: [otlp_http/spluki-proxy]
