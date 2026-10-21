@@ -5,7 +5,7 @@
 # stp-vpc-spluki-usw2) to the Spluki ECS OTel proxy, which adds
 # splashtop.env=DEV / splashtop.stack=SPLUKI and forwards to Cent.
 #
-# Required environment (see README.md):
+# Required environment:
 #   SPLUKI_OTEL_ENDPOINT  http://<interface endpoint DNS>:4318 (plain HTTP — the
 #                         proxy NLB listens on TCP 4318, PrivateLink keeps it private)
 #   GOMEMLIMIT            soft Go heap limit, below the systemd MemoryMax
