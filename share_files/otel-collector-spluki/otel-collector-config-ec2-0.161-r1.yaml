@@ -44,9 +44,6 @@ receivers:
   # Lines are shipped as-is (fields are parsed at query time, e.g. LogQL `| logfmt`).
   # The only processing is joining a traceback's lines to the record they belong to:
   # a record starts at a timestamp.
-  #
-  # The spluki.service journal is NOT collected: it mostly repeats the app log
-  # (the unit copies every record to stderr), plus uvicorn's access log.
   file_log/spluki:
     include:
       - /home/ec2-user/work/Spluki/web-service/backend/storage/logs/spluki.log*

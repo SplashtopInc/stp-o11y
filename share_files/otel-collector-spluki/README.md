@@ -55,8 +55,7 @@ No traces from either. Neither opens a receiving port.
 
 The app log is shipped unparsed: each line is `<time> level=… logger=… request_id=… <message key=value …>`,
 so fields are extracted at query time (LogQL `| logfmt`, or a regexp for the
-timestamp). The `spluki.service` journal is not collected — it mostly repeats the
-app log (the unit copies every record to stderr), plus uvicorn's access log.
+timestamp).
 
 ## Environment
 
