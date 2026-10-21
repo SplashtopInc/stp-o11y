@@ -1,9 +1,13 @@
 # DT-3571 — OTel collector on the Spluki control-plane EC2 host
 #
 # Paired with: otelcol-contrib 0.161.x (linux arm64 RPM, systemd) on Amazon Linux 2023.
-# Sends host metrics + the Spluki app log over PrivateLink (interface endpoint in
-# stp-vpc-spluki-usw2) to the Spluki ECS OTel proxy, which adds
-# splashtop.env=DEV / splashtop.stack=SPLUKI and forwards to Cent.
+# Sends host metrics, a /healthz probe of the control plane and the Spluki app log
+# over PrivateLink (interface endpoint in stp-vpc-spluki-usw2) to the Spluki ECS OTel
+# proxy, which adds splashtop.env=DEV / splashtop.stack=SPLUKI and forwards to Cent.
+#
+# Identity in Cent: service.name=spluki-control-plane (Mimir `job`, Loki
+# `service_name`), service.instance.id=<EC2 instance id> (Mimir `instance`),
+# splashtop.region=us-west-2.
 #
 # Required environment:
 #   SPLUKI_OTEL_ENDPOINT  http://<interface endpoint DNS>:4318 (plain HTTP — the
@@ -38,6 +42,15 @@ receivers:
           match_type: strict
           fs_types: [autofs, binfmt_misc, bpf, cgroup2, configfs, debugfs, devpts, devtmpfs, fusectl, hugetlbfs, mqueue, nsfs, overlay, proc, procfs, pstore, rpc_pipefs, securityfs, selinuxfs, squashfs, sysfs, tracefs, tmpfs]
 
+  # Is the control plane serving HTTP: spluki.service listens on :80 and /healthz
+  # answers 200 while the process serves requests (it consults no dependency, so
+  # this is liveness, not "the datastore is healthy").
+  http_check/spluki:
+    collection_interval: 30s
+    targets:
+      - endpoint: http://127.0.0.1:80/healthz
+        method: GET
+
   # The app's own log: spluki.logging_config writes it through a RotatingFileHandler
   # (1 MB x 30) under the unit's WorkingDirectory, one line per record:
   #   <asctime> level=<LEVEL> logger=<name> request_id=<id> <message with key=value tokens>
@@ -65,8 +78,25 @@ processors:
   resource:
     attributes:
       - key: service.name
-        value: spluki
+        value: spluki-control-plane
         action: insert
+      - key: splashtop.region
+        value: us-west-2
+        action: insert
+  # Mimir labels every series with service.instance.id as `instance`: use the EC2
+  # instance id (from the ec2 detector), the hostname if that is unavailable.
+  transform/instance-id:
+    error_mode: ignore
+    metric_statements:
+      - context: resource
+        statements:
+          - set(attributes["service.instance.id"], attributes["host.id"]) where attributes["service.instance.id"] == nil and attributes["host.id"] != nil
+          - set(attributes["service.instance.id"], attributes["host.name"]) where attributes["service.instance.id"] == nil and attributes["host.name"] != nil
+    log_statements:
+      - context: resource
+        statements:
+          - set(attributes["service.instance.id"], attributes["host.id"]) where attributes["service.instance.id"] == nil and attributes["host.id"] != nil
+          - set(attributes["service.instance.id"], attributes["host.name"]) where attributes["service.instance.id"] == nil and attributes["host.name"] != nil
 
 exporters:
   otlp_http/spluki-proxy:
@@ -86,10 +116,10 @@ service:
       level: none
   pipelines:
     metrics:
-      receivers: [host_metrics]
-      processors: [memory_limiter, resource_detection, resource, batch]
+      receivers: [host_metrics, http_check/spluki]
+      processors: [memory_limiter, resource_detection, resource, transform/instance-id, batch]
       exporters: [otlp_http/spluki-proxy]
     logs:
       receivers: [file_log/spluki]
-      processors: [memory_limiter, resource_detection, resource, batch]
+      processors: [memory_limiter, resource_detection, resource, transform/instance-id, batch]
       exporters: [otlp_http/spluki-proxy]

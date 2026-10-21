@@ -1,11 +1,19 @@
 # DT-3571 — OTel collector sidecar for Spluki app tasks (ECS Fargate, ARM64)
 #
-# Paired with: otelcol-contrib 0.161.x image (multi-arch, mirrored into the
-# spluki-m6-dev/ ECR namespace). One sidecar per app task; it reads the task's own
-# ECS Task Metadata endpoint (CPU / memory / network / storage per task and per
-# container) and sends it over PrivateLink (interface endpoint in spluki-m6-dev-vpc)
-# to the Spluki ECS OTel proxy, which adds splashtop.env=DEV /
-# splashtop.stack=SPLUKI and forwards to Cent.
+# Paired with: otelcol-contrib 0.161.x image (arm64, in the account's private ECR
+# under spluki/dev/ — the only namespace the per-app execution roles may pull from).
+# One sidecar per app task; it reads the task's own ECS Task Metadata endpoint (CPU /
+# memory / network / storage per task and per container) and sends it over
+# PrivateLink (interface endpoint in spluki-m6-dev-vpc) to the Spluki ECS OTel proxy,
+# which adds splashtop.env=DEV / splashtop.stack=SPLUKI and forwards to Cent.
+#
+# Identity in Cent (Mimir labels every series with `job` and `instance` only, the
+# other resource attributes go to target_info):
+#   service.name        = task family, spluki-dev-<app-id>   -> `job`: one per app
+#   service.instance.id = <task id> on task-level metrics,
+#                         <task id>/<container name> on container-level ones
+#                                                            -> `instance`
+#   splashtop.region    = us-west-2
 #
 # The sidecar opens no ports: there is no OTLP receiver, so the app cannot (and
 # need not) send it anything.
@@ -32,15 +40,19 @@ processors:
     limit_percentage: 80
     spike_limit_percentage: 25
   batch: {}
-  # The receiver tags every metric with aws.ecs.* (cluster, task ARN, family,
-  # revision, container name). Name the service after the task family so each
-  # Spluki app shows up as its own service.
-  transform/service-name:
+  # The receiver emits one resource for the task (aws.ecs.task.*) and one per
+  # container (the same plus container.name / container.id). Without a distinct
+  # service.instance.id, every task of an app and every container of a task would
+  # collapse into the same Mimir series.
+  transform/identity:
     error_mode: ignore
     metric_statements:
       - context: resource
         statements:
           - set(attributes["service.name"], attributes["aws.ecs.task.family"]) where attributes["service.name"] == nil and attributes["aws.ecs.task.family"] != nil
+          - set(attributes["service.instance.id"], Concat([attributes["aws.ecs.task.id"], attributes["container.name"]], "/")) where attributes["service.instance.id"] == nil and attributes["aws.ecs.task.id"] != nil and attributes["container.name"] != nil
+          - set(attributes["service.instance.id"], attributes["aws.ecs.task.id"]) where attributes["service.instance.id"] == nil and attributes["aws.ecs.task.id"] != nil
+          - set(attributes["splashtop.region"], "us-west-2") where attributes["splashtop.region"] == nil
 
 exporters:
   otlp_http/spluki-proxy:
@@ -60,5 +72,5 @@ service:
   pipelines:
     metrics:
       receivers: [awsecscontainermetrics]
-      processors: [memory_limiter, transform/service-name, batch]
+      processors: [memory_limiter, transform/identity, batch]
       exporters: [otlp_http/spluki-proxy]
