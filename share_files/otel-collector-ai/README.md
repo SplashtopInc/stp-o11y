@@ -5,10 +5,12 @@ OpenTelemetry Collector that ingests telemetry from Splashtop's AI tooling
 Mimir + Loki stack.
 
 - **Jira:** DT-3242
-- **Deployed by:** `stp-devops-k8s-observability/stacks/ai-otel/ocstack/usw2/` (Terraform)
-- **Runtime:** ECS Fargate, VPC `stp-vpc-pub-us-west-2`
+- **Deployed by:** `stp-devops-k8s-observability/stacks/ai-otel/<account>/usw2/` (Terraform)
+  - `ocstack/usw2`: ECS Fargate in `stp-vpc-pub-us-west-2`, exports to Mimir/Loki through PrivateLink (r1). Retires with the old Cent (DT-3694)
+  - `monitoring/usw2`: ECS Fargate in the Cent admin VPC of aws-monitoring, exports to the Cent OTel collector (r2, DT-3692)
 - **Config / image pairs** (the leaf's tfvars switch both in one apply; DT-3549):
-  - `share_files/otel-collector-ai/otel-collector-config-0.161-r1.yaml` ↔ `opentelemetry-collector-contrib:0.161.x`
+  - `share_files/otel-collector-ai/otel-collector-config-0.161-r2.yaml` ↔ `opentelemetry-collector-contrib:0.161.x` — one `otlp_http/cent` exporter to `cent-otel-int.ops.aws-monitoring.splashtop.com:4318` (internal NLB). The Cent collector routes by `splashtop.env` (QA → tenant 2), so no `X-Scope-OrgID` here and every exporting pipeline keeps the `resource` processor
+  - `share_files/otel-collector-ai/otel-collector-config-0.161-r1.yaml` ↔ `opentelemetry-collector-contrib:0.161.x` — PrivateLink to Mimir/Loki, `X-Scope-OrgID: 2`
   - `share_files/otel-collector-ai/otel-collector-config-v1-0.yaml` ↔ `0.154.0` (frozen; delete once nothing points at it)
 - **Config file rule:** published files are immutable. A config change gets a new `-rN` file; a new collector minor starts at `-<minor>-r1`.
 
